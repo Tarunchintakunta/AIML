@@ -1,0 +1,46 @@
+{
+  "Random Forest": {
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "train_time": 0.2261350154876709,
+    "consistency_tau": -0.02294197031039136,
+    "fidelity": 0.0,
+    "shap_time": 0.017602205276489258,
+    "lime_time": 0.6356620788574219
+  },
+  "XGBoost": {
+    "f1": 0.998330550918197,
+    "accuracy": 0.999,
+    "precision": 1.0,
+    "recall": 0.9966666666666667,
+    "train_time": 0.08119702339172363,
+    "consistency_tau": 0.08771929824561404,
+    "fidelity": 0.0,
+    "shap_time": 0.013952970504760742,
+    "lime_time": 0.23723077774047852
+  },
+  "LightGBM": {
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "train_time": 0.23254776000976562,
+    "consistency_tau": 0.18758434547908234,
+    "fidelity": 0.0,
+    "shap_time": 0.016261816024780273,
+    "lime_time": 0.24677395820617676
+  },
+  "Stacking": {
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "train_time": 2.9135632514953613,
+    "consistency_tau": 0.16059379217273956,
+    "fidelity": 0.0,
+    "shap_time": 7.317012071609497,
+    "lime_time": 0.650550127029419
+  }
+}
