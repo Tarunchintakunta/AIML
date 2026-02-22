@@ -1,0 +1,42 @@
+{
+  "graphsage_2layer": {
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "auc_roc": 1.0,
+    "training_time": 0.5383539199829102
+  },
+  "graphsage_3layer": {
+    "f1": 0.9966777408637874,
+    "accuracy": 0.9986666666666667,
+    "precision": 0.9933774834437086,
+    "recall": 1.0,
+    "auc_roc": 1.0,
+    "training_time": 0.5261859893798828
+  },
+  "random_forest": {
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "auc_roc": 1.0,
+    "training_time": 0.2720210552215576
+  },
+  "xgboost": {
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "auc_roc": 1.0,
+    "training_time": 0.06416726112365723
+  },
+  "mlp": {
+    "f1": 1.0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "auc_roc": 1.0,
+    "training_time": 0.09764289855957031
+  }
+}
