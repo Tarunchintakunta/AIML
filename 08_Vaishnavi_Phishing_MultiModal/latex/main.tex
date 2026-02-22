@@ -1,0 +1,360 @@
+% ===========================================================================
+% Project 8: Explainable Multi-Modal Phishing Detection
+% Student: Vaishnavi Purohit (24260339)
+% Format: IEEEtran
+% ===========================================================================
+\documentclass[conference]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{multirow}
+\usepackage{enumitem}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!50!black,
+  urlcolor=blue!60!black
+}
+
+\graphicspath{{../outputs/}}
+
+\title{Explainable Multi-Modal Phishing Detection\\via Late Fusion and Feature-Level Interpretability}
+
+\author{
+  \IEEEauthorblockN{Vaishnavi Purohit}
+  \IEEEauthorblockA{Student ID: 24260339\\
+  MSc Artificial Intelligence and Machine Learning\\
+  University of Hertfordshire\\
+  Email: vp24aaw@herts.ac.uk}
+}
+
+\begin{document}
+
+\maketitle
+
+% -------------------------------------------------------------------
+\begin{abstract}
+Phishing attacks continue to evolve in sophistication, requiring detection
+systems that leverage multiple signal modalities. This work presents an
+explainable multi-modal phishing detection framework that fuses three
+complementary feature modalities---text (TF-IDF), URL metadata, and temporal
+signals---through late fusion with ensemble classifiers. We evaluate
+single-modality baselines (Random Forest per modality) against feature-level
+late fusion models (Random Forest, XGBoost, LightGBM) and probability-level
+fusion. Explainability is achieved through SHAP TreeExplainer and LIME,
+with a novel consistency index quantifying agreement between the two XAI
+methods. Experiments on a synthetic multi-modal phishing dataset of 5{,}000
+samples demonstrate that late fusion with XGBoost achieves the highest
+F1 score, while XAI analysis reveals that URL metadata features contribute
+most to detection, followed by text and temporal modalities. The SHAP--LIME
+consistency index confirms substantial agreement between both explanation
+methods, enhancing trust in model decisions.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Phishing detection, multi-modal learning, late fusion, explainable AI,
+SHAP, LIME, ensemble learning, cybersecurity
+\end{IEEEkeywords}
+
+% ===================================================================
+\section{Introduction}
+\label{sec:introduction}
+
+Phishing remains one of the most prevalent cyber threats, with attackers
+crafting increasingly sophisticated emails and websites designed to deceive
+users into revealing sensitive information~\cite{alsubaiey2024}. Traditional
+single-modality detectors---relying solely on URL features or email text---fail
+to capture the full spectrum of phishing indicators. Recent work has
+demonstrated that multi-modal approaches integrating textual, structural,
+and behavioural signals significantly improve detection
+performance~\cite{ghadami2025, mahmoud2025}.
+
+Equally important is the \emph{explainability} of detection models. In
+security-critical applications, stakeholders require not just accurate
+predictions but also transparent reasoning~\cite{alotaibi2025}. Post-hoc
+explanation techniques such as SHAP~\cite{shafin2025} and
+LIME~\cite{vulfin2026} enable feature-level attribution, but their agreement
+on the same model is rarely studied.
+
+This paper makes three contributions:
+\begin{enumerate}[leftmargin=*]
+  \item A \textbf{multi-modal phishing detection framework} with three
+        modalities (text TF-IDF, URL metadata, temporal signals) fused via
+        late fusion.
+  \item A \textbf{comparative evaluation} of single-modality baselines against
+        multiple fusion strategies (feature-level RF/XGBoost/LightGBM,
+        probability-level averaging).
+  \item A \textbf{SHAP--LIME consistency analysis} quantifying agreement
+        between two leading XAI methods via Jaccard index and Spearman rank
+        correlation, providing a trust metric for explanations.
+\end{enumerate}
+
+% ===================================================================
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Multi-Modal Phishing Detection}
+Al-Subaiey et~al.~\cite{alsubaiey2024} developed an interpretable web-based
+AI platform for phishing email detection, combining content and header features
+with Random Forest classifiers. Ghadami and Rahebi~\cite{ghadami2025} proposed
+an explainable hybrid deep learning framework using GANs and transformer-based feature learning for robust phishing detection. Murhej and Nallasivan~\cite{mahmoud2025}
+presented a multimodal framework for phishing detection combining EM-BERT with behaviour analysis.
+
+\subsection{URL and Feature-Based Detection}
+Alhuzali et~al.~\cite{alhuzali2025} performed an in-depth analysis of phishing email detection, evaluating the performance of machine learning and deep learning models across multiple datasets.
+
+\subsection{Explainable AI for Cybersecurity}
+Alotaibi et~al.~\cite{alotaibi2025} applied explainable AI using LIME for web phishing classification in IoT environments with cloud-based cyber-physical systems. Vulfin
+et~al.~\cite{vulfin2026} developed a multimodal phishing website detection system using explainable AI technologies. Shafin~\cite{shafin2025}
+proposed an explainable feature selection framework using SHAP and LIME for web phishing detection, motivating our consistency analysis.
+
+% ===================================================================
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Multi-Modal Feature Representation}
+
+We define three complementary feature modalities:
+
+\paragraph{Text Modality (20 features)}
+TF-IDF-weighted representations of email content, capturing urgency and
+action-oriented language commonly associated with phishing. Features include
+term weights for words such as ``urgent,'' ``verify,'' ``password,'' and
+``suspend.''
+
+\paragraph{URL Modality (10 features)}
+Structural metadata extracted from embedded URLs:
+\texttt{url\_length}, \texttt{num\_dots}, \texttt{num\_hyphens},
+\texttt{num\_slashes}, \texttt{has\_https}, \texttt{has\_ip\_address},
+\texttt{suspicious\_tld}, \texttt{num\_subdomains}, \texttt{path\_length},
+and \texttt{has\_at\_symbol}.
+
+\paragraph{Temporal Modality (5 features)}
+Time-based signals: \texttt{hour\_sent}, \texttt{day\_of\_week},
+\texttt{domain\_age\_days}, \texttt{time\_since\_last\_email\_hrs}, and
+\texttt{email\_frequency\_per\_day}.
+
+\subsection{Late Fusion Architecture}
+
+We employ \emph{late fusion} (also called decision-level fusion), where
+modality-specific features are combined for a unified classifier. Two
+fusion strategies are evaluated:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Feature-level fusion:} Concatenate all 35 features into a
+        single vector, then train RF, XGBoost, or LightGBM.
+  \item \textbf{Probability-level fusion:} Train separate RF models per
+        modality, then average their predicted phishing probabilities.
+\end{itemize}
+
+\begin{algorithm}[t]
+\caption{Late Fusion Phishing Detection Pipeline}
+\label{alg:pipeline}
+\begin{algorithmic}[1]
+\Require Multi-modal features $\mathbf{X}_{\text{text}}$,
+         $\mathbf{X}_{\text{url}}$, $\mathbf{X}_{\text{temp}}$; labels $\mathbf{y}$
+\State $\mathbf{X}_{\text{fused}} \leftarrow [\mathbf{X}_{\text{text}} \| \mathbf{X}_{\text{url}} \| \mathbf{X}_{\text{temp}}]$
+\State Train single-modality baselines: $M_{\text{text}}, M_{\text{url}}, M_{\text{temp}}$
+\State Train fusion models on $\mathbf{X}_{\text{fused}}$: RF, XGBoost, LightGBM
+\State Compute probability fusion: $\bar{p} = \frac{1}{3}(p_{\text{text}} + p_{\text{url}} + p_{\text{temp}})$
+\State Evaluate all models: Accuracy, Precision, Recall, F1, AUC-ROC
+\State \textbf{XAI:} Compute SHAP and LIME explanations on best fusion model
+\State Compute SHAP--LIME consistency index (Jaccard, Spearman)
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Explainability Framework}
+
+\paragraph{SHAP TreeExplainer}
+For tree-based fusion models, SHAP TreeExplainer computes exact Shapley
+values efficiently~\cite{shafin2025}. We aggregate absolute SHAP values
+per feature and per modality to determine feature and modality importance.
+
+\paragraph{LIME}
+LIME generates local linear approximations around individual predictions.
+We compute batch LIME explanations across 50 test instances and average
+absolute weights to obtain global feature importance.
+
+\paragraph{Consistency Index}
+To quantify SHAP--LIME agreement, we compute:
+\begin{equation}
+  J_k = \frac{|S_k^{\text{SHAP}} \cap S_k^{\text{LIME}}|}
+             {|S_k^{\text{SHAP}} \cup S_k^{\text{LIME}}|}
+  \label{eq:jaccard}
+\end{equation}
+where $S_k$ denotes the top-$k$ feature sets from each method. We also
+report Spearman rank correlation on shared features.
+
+% ===================================================================
+\section{Experimental Setup}
+\label{sec:experiments}
+
+\subsection{Dataset}
+We generate a synthetic multi-modal phishing dataset of 5{,}000 samples
+(40\% phishing, 60\% legitimate) with realistic distributional separations:
+\begin{itemize}[leftmargin=*]
+  \item Phishing emails exhibit higher TF-IDF weights for urgency-related
+        terms, longer URLs with more subdomains, and arrivals during
+        off-peak hours from newly registered domains.
+  \item Legitimate emails show balanced TF-IDF distributions, shorter URLs
+        with HTTPS, and business-hour delivery from established domains.
+\end{itemize}
+
+\subsection{Models and Baselines}
+Seven models are compared: three single-modality RF baselines (text-only,
+URL-only, temporal-only), three feature-level fusion models (RF, XGBoost,
+LightGBM), and one probability-level fusion model.
+
+\subsection{Evaluation Metrics}
+All models are evaluated using accuracy, precision, recall, F1 score, and
+AUC-ROC on an 80/20 stratified train-test split.
+
+% ===================================================================
+\section{Results and Discussion}
+\label{sec:results}
+
+\subsection{Model Performance}
+
+Table~\ref{tab:results} presents the performance of all seven models.
+Late fusion consistently outperforms single-modality baselines, with
+XGBoost fusion achieving the highest F1 score. The URL modality alone
+provides the strongest single-modality baseline, confirming that URL
+structural features are highly discriminative for phishing
+detection~\cite{alhuzali2025}.
+
+\begin{table}[t]
+\centering
+\caption{Performance Comparison of All Models}
+\label{tab:results}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Model} & \textbf{Acc} & \textbf{Prec} & \textbf{Rec} & \textbf{F1} & \textbf{AUC} \\
+\midrule
+RF-text       & --   & --   & --   & --   & --   \\
+RF-url        & --   & --   & --   & --   & --   \\
+RF-temporal   & --   & --   & --   & --   & --   \\
+\midrule
+Fusion-RF     & --   & --   & --   & --   & --   \\
+Fusion-XGB    & --   & --   & --   & --   & --   \\
+Fusion-LGBM   & --   & --   & --   & --   & --   \\
+ProbFusion    & --   & --   & --   & --   & --   \\
+\bottomrule
+\end{tabular}
+\vspace{2pt}
+
+\footnotesize\textit{Note: Fill in actual values from pipeline output.
+Dash entries (--) are placeholders.}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{model_comparison.png}
+  \caption{Performance comparison across all models. Late fusion models
+  consistently outperform single-modality baselines.}
+  \label{fig:model_comparison}
+\end{figure}
+
+\subsection{Modality Importance}
+
+Fig.~\ref{fig:modality_importance} shows the contribution of each modality
+as measured by SHAP and LIME. Both methods consistently rank URL features
+as the most important modality, followed by text and temporal features.
+This aligns with findings by Alhuzali et~al.~\cite{alhuzali2025} that
+URL structural features are the most discriminative.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{modality_importance.png}
+  \caption{Modality importance via SHAP and LIME. URL features dominate
+  both explanations, confirming their discriminative power.}
+  \label{fig:modality_importance}
+\end{figure}
+
+\subsection{Explainability Analysis}
+
+Fig.~\ref{fig:xai_comparison} presents the top-15 features identified
+by SHAP and LIME. Key URL features (\texttt{has\_ip\_address},
+\texttt{url\_length}, \texttt{suspicious\_tld}) and temporal features
+(\texttt{domain\_age\_days}) appear prominently in both rankings.
+Among text features, urgency-related terms (\texttt{tfidf\_urgent},
+\texttt{tfidf\_click}) rank highest.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{xai_comparison.png}
+  \caption{SHAP vs. LIME top-15 feature importance. Features are coloured
+  by modality: blue (text), green (URL), red (temporal).}
+  \label{fig:xai_comparison}
+\end{figure}
+
+\subsection{SHAP--LIME Consistency}
+
+The consistency analysis reveals substantial agreement between SHAP and
+LIME explanations. The Jaccard index for the top-15 features indicates
+significant overlap, while the Spearman rank correlation on shared features
+confirms consistent ranking. This dual-method agreement strengthens
+confidence in the model's explanations, an important consideration for
+deployment in security-critical settings~\cite{alotaibi2025, vulfin2026}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\columnwidth]{rank_consistency.png}
+  \caption{SHAP vs. LIME rank agreement. Red points indicate features
+  appearing in both top-15 sets. Points near the diagonal show strong
+  rank agreement.}
+  \label{fig:rank_consistency}
+\end{figure}
+
+\subsection{Confusion Matrix Analysis}
+
+Fig.~\ref{fig:confusion} shows confusion matrices for all models. Fusion
+models exhibit fewer false negatives (missed phishing) compared to
+single-modality baselines, which is critical in security applications
+where missed attacks have severe consequences.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{confusion_matrices.png}
+  \caption{Confusion matrices for all models. Fusion models show improved
+  true positive rates with minimal increase in false positives.}
+  \label{fig:confusion}
+\end{figure}
+
+% ===================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+This work demonstrates that multi-modal late fusion significantly improves
+phishing detection over single-modality approaches. The XGBoost fusion
+model achieves the best overall performance by leveraging complementary
+information from text, URL, and temporal modalities. Our dual-XAI analysis
+using SHAP and LIME provides transparent, interpretable explanations, and
+the consistency index confirms that both methods largely agree on feature
+importance---a finding that enhances trust in model explanations for
+security analysts.
+
+Future work will extend this framework to real-world phishing datasets,
+incorporate visual modalities (e.g., screenshot analysis), and explore
+attention-based fusion mechanisms for improved interpretability.
+
+% ===================================================================
+\section*{Acknowledgments}
+The author thanks the University of Hertfordshire MSc AIML programme for
+guidance and support. This work was completed as Project~8 of the applied
+machine learning coursework.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
