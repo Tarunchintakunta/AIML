@@ -1,0 +1,120 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{multirow}
+\usepackage{xcolor}
+
+\graphicspath{{../src/figures/}}
+
+\title{Federated Learning for Privacy-Preserving Cyber Threat Intelligence Sharing}
+
+\author{
+\IEEEauthorblockN{Arun Teja Dadala}
+\IEEEauthorblockA{Student ID: x25101013\\
+H9AIMLC -- AI/ML in Cybersecurity\\
+National College of Ireland\\
+Dublin, Ireland}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Organisations face significant barriers to sharing cyber threat intelligence (CTI) due to privacy regulations, competitive concerns, and the risk of exposing sensitive network configurations. This study proposes a federated learning (FL) framework that enables cross-organisational threat intelligence sharing while preserving data sovereignty. Using UNSW-NB15, CIC-IDS2017, and NSL-KDD benchmark datasets partitioned into non-IID distributions, we evaluate three aggregation strategies---FedAvg, Krum, and coordinate-wise Median---under differential privacy constraints on CPU-only hardware. The framework simultaneously addresses privacy preservation through ($\epsilon$,$\delta$)-differential privacy, Byzantine robustness via Krum and Median aggregation, and computational feasibility for organisations without GPU infrastructure. Results demonstrate that the federated approach achieves detection accuracy comparable to centralised baselines while maintaining formal privacy guarantees and Byzantine fault tolerance.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Federated Learning, Cyber Threat Intelligence, Differential Privacy, Byzantine Robustness, Intrusion Detection
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+Organisations face substantial difficulties in collectively defending against advanced cyber threats due to barriers in sharing threat information. Privacy concerns regarding confidential security data, compliance with GDPR and similar regulations, and the competitive risks of exposing network topologies create significant obstacles to collaborative threat intelligence sharing. Centralised platforms exacerbate these challenges by creating single points of failure and requiring trust in intermediaries.
+
+Federated Learning (FL) offers a principled solution by enabling collaborative model training without centralising raw data. Each organisation trains locally on its own security logs and shares only model parameters with an aggregation server, thereby preserving data sovereignty while enhancing collective threat detection capability \cite{buyuktanir2025}.
+
+This study addresses the research question: \textit{Can a federated learning framework enable effective cross-organisational threat intelligence sharing while guaranteeing formal differential privacy, maintaining intrusion detection accuracy comparable to centralised baselines, and remaining computationally feasible for CPU-only deployment?}
+
+Three publicly available benchmark datasets---UNSW-NB15, CIC-IDS2017, and NSL-KDD---are employed to capture diverse attack types, traffic patterns, and feature distributions representative of real network environments \cite{timofte2025}.
+
+\section{Related Work}
+
+Buyuktanir et al. \cite{buyuktanir2025} present a comprehensive taxonomy of FL-based IDS architectures, highlighting non-IID data and adversarial robustness as key challenges, but lack empirical evaluation of Byzantine-robust aggregation across multiple datasets.
+
+Timofte et al. \cite{timofte2025} demonstrated formal ($\epsilon$,$\delta$)-differential privacy in federated IDS with above 90\% accuracy on UNSW-NB15, but were restricted to a single dataset without addressing non-IID distributions or CPU performance considerations.
+
+Tom et al. \cite{tom2025} evaluated FL in industrial IoT with hierarchical architectures but focused on IoT-centric models with limited applicability to enterprise CTI. Ragab et al. \cite{ragab2025} achieved high accuracy using Harris Hawk optimisation in federated IoT intrusion detection but assumed reliable GPU connectivity.
+
+Jianping et al. \cite{jianping2024} employed federated attention-based GNNs for privacy-preserving attack detection, but GNN computational requirements preclude CPU-only deployment. Abd Elaziz et al. \cite{abdelaziz2025} explored Tab Transformers with PSO/GA hyperparameter optimisation in FL but lacked comparison with CPU-efficient alternatives.
+
+Amin et al. \cite{amin2025} demonstrated Krum and Median aggregation resilience at 93.7\% accuracy on NSL-KDD but were limited to a single dataset without CPU overhead analysis.
+
+\section{Methodology and Implementation}
+
+\subsection{Dataset Preparation}
+Three benchmark IDS datasets are preprocessed with feature normalisation, binary label encoding, and non-IID partitioning using Dirichlet distribution ($\alpha=0.5$) to simulate heterogeneous organisational data silos across 5 federated clients.
+
+\subsection{Federated Learning Framework}
+A lightweight MLP architecture (64-32-2 neurons) is deployed across all clients. Three aggregation strategies are evaluated:
+
+\textbf{FedAvg}: Weighted average of client parameters by dataset size.
+\textbf{Krum}: Selects the client model closest to the majority, providing Byzantine fault tolerance.
+\textbf{Median}: Coordinate-wise median aggregation for robust parameter estimation.
+
+\subsection{Differential Privacy}
+($\epsilon$,$\delta$)-differential privacy is implemented via calibrated Gaussian noise addition to client model parameters before aggregation, with $\delta=10^{-5}$ and varying $\epsilon \in \{0.1, 0.5, 1.0, 2.0, 5.0, 10.0\}$.
+
+\section{Evaluation}
+
+\subsection{Results}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{aggregation_comparison.png}
+\caption{Performance comparison across aggregation methods and centralised baseline.}
+\label{fig:agg_comparison}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fl_convergence.png}
+\caption{F1-score and accuracy convergence across federated communication rounds.}
+\label{fig:convergence}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{dp_tradeoff.png}
+\caption{Differential privacy: Privacy budget ($\epsilon$) vs. detection F1-score trade-off.}
+\label{fig:dp_tradeoff}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\columnwidth]{confusion_matrix_fedavg.png}
+\caption{Confusion matrix for FedAvg aggregation on test data.}
+\label{fig:cm_fedavg}
+\end{figure}
+
+\subsection{Discussion}
+The results demonstrate that federated learning achieves detection performance comparable to centralised training. FedAvg and Median aggregation maintain high F1-scores, while Krum provides Byzantine robustness at a modest accuracy cost. The differential privacy analysis reveals a clear privacy-accuracy trade-off, with $\epsilon \geq 2.0$ maintaining detection quality above 95\%.
+
+\section{Conclusions and Future Work}
+
+This study demonstrates that federated learning can enable effective cross-organisational CTI sharing with formal privacy guarantees and Byzantine robustness on CPU-only hardware. The framework bridges the gap between theoretical FL capabilities and practical deployment constraints faced by organisations without GPU infrastructure.
+
+\subsection{Limitations}
+Key limitations include: the use of benchmark datasets rather than production CTI data; the simulation of non-IID partitions rather than actual organisational distributions; and the evaluation on a single machine simulating multiple clients rather than distributed deployment.
+
+\subsection{Future Work}
+Future directions include: deployment on actual distributed infrastructure; integration with STIX/TAXII threat intelligence sharing standards; evaluation with production SOC alert data; and investigation of asynchronous FL to handle variable client availability.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
