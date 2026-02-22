@@ -1,0 +1,52 @@
+{
+  "top_k": 15,
+  "jaccard_index": 0.42857142857142855,
+  "overlap_count": 9,
+  "spearman_correlation": 0.9333333333333332,
+  "spearman_p_value": 0.00023589981215941676,
+  "shap_top_features": [
+    "domain_age_days",
+    "email_frequency_per_day",
+    "has_https",
+    "hour_sent",
+    "num_hyphens",
+    "num_subdomains",
+    "path_length",
+    "tfidf_click",
+    "tfidf_confirm",
+    "tfidf_password",
+    "tfidf_suspend",
+    "tfidf_urgent",
+    "tfidf_verify",
+    "time_since_last_email_hrs",
+    "url_length"
+  ],
+  "lime_top_features": [
+    "domain_age_days",
+    "has_at_symbol",
+    "has_ip_address",
+    "hour_sent",
+    "num_hyphens",
+    "path_length",
+    "tfidf_confirm",
+    "tfidf_customer",
+    "tfidf_offer",
+    "tfidf_password",
+    "tfidf_suspend",
+    "tfidf_update",
+    "tfidf_winner",
+    "time_since_last_email_hrs",
+    "url_length"
+  ],
+  "shared_features": [
+    "domain_age_days",
+    "hour_sent",
+    "num_hyphens",
+    "path_length",
+    "tfidf_confirm",
+    "tfidf_password",
+    "tfidf_suspend",
+    "time_since_last_email_hrs",
+    "url_length"
+  ]
+}
