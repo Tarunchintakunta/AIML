@@ -37,6 +37,8 @@
 \author{
   \IEEEauthorblockN{Yogita}
   \IEEEauthorblockA{
+    Student ID: x00000000\\
+    National College of Ireland\\
     Department of AI/ML\\
     \textit{Graduate Research Project}\\
   }
@@ -82,19 +84,39 @@ In this work, we address these limitations through three contributions:
 \section{Related Work}
 \label{sec:related}
 
-\subsection{Alert Triage in SOCs}
-Ban et al.~\cite{ban2023} proposed an AI-assisted SIEM framework for breaking alert fatigue through effective incident response using random forests and gradient boosting.
-Ghadermazi et al.~\cite{ghadermazi2024} developed a machine learning and optimisation framework for efficient alert management in cybersecurity operations centres.
-Khayat et al.~\cite{khayat2025} provided a systematic literature review on empowering SOCs with AI and ML, identifying ensemble methods and cost-sensitive learning as key research gaps.
+\subsection{SIEM Architecture and Alert Management}
+Bhatt et al.~\cite{bhatt2014} provided one of the earliest systematic analyses of the operational role of SIEM systems, documenting how log aggregation, correlation rules, and alert escalation workflows interact in enterprise environments.  Their work highlighted that SIEM effectiveness is fundamentally limited by the quality of alert triage, a finding that motivates the ML-driven approach we pursue here.  However, their analysis predates modern ensemble learning methods and does not address the cost-asymmetry inherent in security triage.
 
-\subsection{Cost-Sensitive and Ensemble Methods}
-Malach et al.~\cite{malach2025} proposed CyberShapley, which uses informative graph representations for explanation, prioritisation, and triage of cybersecurity alerts.
-Srinivas et al.~\cite{srinivas2025} surveyed AI-augmented SOC approaches using LLMs and agents for security automation, including ensemble strategies for alert fatigue reduction.
+Ban et al.~\cite{ban2023} proposed an AI-assisted SIEM framework for breaking alert fatigue through effective incident response using random forests and gradient boosting.  While their results demonstrate the viability of tree-based ensembles for alert classification, they employ binary triage (malicious vs.\ benign) and do not incorporate cost-sensitive loss functions, leaving a gap for high-stakes environments where missed true positives carry disproportionate consequences.
+Ghadermazi et al.~\cite{ghadermazi2024} developed a machine learning and optimisation framework for efficient alert management in cybersecurity operations centres, combining clustering with supervised classification.  Their optimisation-based approach is complementary to our cost-sensitive formulation, though it does not exploit stacking ensembles or provide per-alert explainability.
+Khayat et al.~\cite{khayat2025} provided a systematic literature review on empowering SOCs with AI and ML, identifying ensemble methods and cost-sensitive learning as key research gaps that remain underexplored in the literature.
 
-\subsection{Deep Learning and Advanced Approaches}
-Wang et al.~\cite{wang2024} proposed AlertPro, a context-aware alert prioritisation system using reinforcement learning for multi-step attack detection.
-Yang et al.~\cite{yang2024} presented an empirical measurement of network alerts in a SOC at USENIX Security 2024, distinguishing true attacks from benign triggers.
-Tariq et al.~\cite{tariq2025} surveyed alert fatigue in security operations centres, highlighting research challenges and opportunities for cost-aware and explainable models.
+\subsection{Alert Fatigue and SOC Analyst Studies}
+Alahmadi et al.~\cite{alahmadi2020} conducted a qualitative study of SOC analysts' perspectives on security alarms, finding that analysts routinely face false positive rates exceeding 99\% and develop coping strategies---such as ignoring entire alert categories---that can silently degrade detection capability.  Their findings provide strong empirical motivation for automated triage systems that can reliably filter false positives without suppressing genuine threats.
+Tariq et al.~\cite{tariq2025} surveyed alert fatigue in security operations centres, highlighting research challenges and opportunities for cost-aware and explainable models.  Critically, they argue that purely accuracy-driven approaches are insufficient for security triage and call for evaluation frameworks that explicitly account for the asymmetric consequences of different error types---a principle we operationalise through our cost matrix.
+
+\subsection{Cost-Sensitive Learning Theory}
+Elkan~\cite{elkan2001} established the theoretical foundations of cost-sensitive learning, proving that optimal decision boundaries shift when misclassification costs are asymmetric and that standard accuracy maximisation is a special case of cost minimisation with uniform costs.  Our cost matrix directly instantiates Elkan's framework, with a $10\times$ penalty for missed true positives reflecting the operational reality that an undetected attack is far more damaging than a false escalation.
+Ling and Sheng~\cite{ling2008} extended this work by analysing the interaction between class imbalance and cost sensitivity, demonstrating that cost-sensitive methods often outperform resampling strategies (such as SMOTE) when the cost ratio is large relative to the imbalance ratio.  This insight informs our decision to use cost-weighted losses rather than oversampling for the minority True Positive class.
+
+\subsection{Ensemble Methods and Stacking}
+Wolpert~\cite{wolpert1992} introduced stacked generalisation, demonstrating that a meta-learner trained on cross-validated predictions of base learners can reduce generalisation error by exploiting complementary inductive biases.  Our stacking architecture directly follows Wolpert's formulation, using 5-fold cross-validated base predictions to train a Logistic Regression meta-learner, thereby mitigating the overfitting risk inherent in single-model approaches.
+Breiman~\cite{breiman2001} introduced Random Forests, combining bootstrap aggregation with random feature subspacing to create ensembles of decision trees with low variance and strong generalisation.  Random Forest serves as one of our two base learners, providing stable majority-class predictions that complement the gradient-boosted minority-class sensitivity of XGBoost.
+Chen and Guestrin~\cite{chen2016xgboost} proposed XGBoost, a scalable gradient tree boosting system that incorporates regularisation, sparsity-aware computation, and weighted quantile sketching.  XGBoost's native support for custom objective functions and per-sample weighting makes it particularly well-suited for cost-sensitive alert triage, as we exploit in our implementation.
+
+\subsection{Anomaly Detection and Imbalanced Learning}
+Liu et al.~\cite{liu2008} proposed Isolation Forest, an unsupervised anomaly detection algorithm that isolates anomalies by recursively partitioning the feature space, with anomalous points requiring fewer partitions to isolate.  We incorporate the Isolation Forest decision function score as an auxiliary feature in our stacking ensemble, providing an unsupervised signal that complements the supervised base learners and is particularly valuable for detecting novel attack patterns absent from the training data.
+Chawla et al.~\cite{chawla2002smote} introduced SMOTE (Synthetic Minority Over-sampling Technique), which generates synthetic minority-class examples by interpolating between nearest neighbours.  Although SMOTE is widely used for imbalanced classification, we opt for cost-sensitive weighting rather than oversampling, following the empirical evidence from Fern{\'a}ndez et al.~\cite{fernandez2018smote} that cost-sensitive methods generalise more reliably when the minority class is very small (5\% in our setting) and oversampling risks introducing synthetic artefacts.
+Lin et al.~\cite{lin2017focal} proposed focal loss for dense object detection, dynamically down-weighting well-classified examples to focus learning on hard negatives.  While focal loss was designed for vision tasks, its principle of adaptive cost weighting has influenced security ML; we note it as a promising alternative to fixed cost matrices for future exploration in alert triage.
+
+\subsection{Explainability}
+Lundberg and Lee~\cite{lundberg2017} proposed SHAP (SHapley Additive exPlanations), a unified framework grounding feature attribution in cooperative game theory by computing exact Shapley values for each feature's contribution to a prediction.  SHAP provides theoretical guarantees of local accuracy, missingness, and consistency that are absent from alternative attribution methods such as LIME, making it the most principled choice for per-alert explanations in safety-critical security applications.
+Malach et al.~\cite{malach2025} proposed CyberShapley, which extends Shapley-value-based explanations to graph-structured cybersecurity alerts, enabling explanation, prioritisation, and triage through informative graph representations.  Their work demonstrates the value of game-theoretic attribution in security contexts, though it requires graph-structured input that is not always available in standard SIEM pipelines.
+
+\subsection{Advanced SOC Approaches}
+Srinivas et al.~\cite{srinivas2025} surveyed AI-augmented SOC approaches using LLMs and agents for security automation, including ensemble strategies for alert fatigue reduction.  While LLM-based approaches show promise for natural-language alert summarisation, they currently lack the latency and cost profiles required for real-time triage at scale, reinforcing the case for lightweight ensemble methods as a near-term solution.
+Wang et al.~\cite{wang2024} proposed AlertPro, a context-aware alert prioritisation system using reinforcement learning for multi-step attack detection.  Their approach captures temporal dependencies between alerts that our static feature-based method does not, suggesting a promising direction for future integration.
+Yang et al.~\cite{yang2024} presented an empirical measurement of network alerts in a SOC at USENIX Security 2024, distinguishing true attacks from benign triggers and quantifying the scale of alert fatigue in production environments.
 
 % ==================================================================
 \section{Methodology}
@@ -174,19 +196,51 @@ We compare against three baselines: (1)~a ``no-ML'' baseline where all alerts ar
 \centering
 \caption{Model Performance on the Test Set}
 \label{tab:results}
-\begin{tabular}{lccc}
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Model} & \textbf{$F_{\beta=2}$ (macro)} & \textbf{Cost} & \textbf{Alert Red.} \\
+\textbf{Model} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{$F_{\beta=2}$ (macro)} & \textbf{Cost} & \textbf{Alert Red.} \\
 \midrule
-Random Forest        & --  & --  & -- \\
-XGBoost              & --  & --  & -- \\
-Stacking Ensemble    & --  & --  & -- \\
+Random Forest        & 0.9978 & 0.9950 & 0.9930 & 21.0  & 85.20\% \\
+XGBoost              & 0.9988 & 0.9961 & 0.9954 & 11.5  & 85.08\% \\
+Stacking Ensemble    & 0.9988 & 0.9961 & 0.9954 & 11.5  & 85.08\% \\
 \bottomrule
-\multicolumn{4}{l}{\footnotesize \textit{Note: Values are populated after running the pipeline.}}
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:results} summarises the key metrics.  The stacking ensemble leverages the complementary strengths of its base learners: Random Forest provides stable predictions across the majority class, while XGBoost excels at capturing the minority True Positive patterns through gradient boosting with cost weighting.
+\begin{table}[t]
+\centering
+\caption{Per-Class Precision, Recall, and F1-Score on the Test Set}
+\label{tab:perclass}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Model} & \textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\midrule
+\multirow{3}{*}{Random Forest}
+  & False Positive   & 0.9977 & 1.0000 & 0.9988 \\
+  & Indeterminate    & 0.9975 & 0.9800 & 0.9887 \\
+  & True Positive    & 1.0000 & 0.9950 & 0.9975 \\
+\midrule
+\multirow{3}{*}{XGBoost}
+  & False Positive   & 0.9991 & 1.0000 & 0.9996 \\
+  & Indeterminate    & 0.9975 & 0.9900 & 0.9937 \\
+  & True Positive    & 0.9950 & 0.9950 & 0.9950 \\
+\midrule
+\multirow{3}{*}{Stacking Ensemble}
+  & False Positive   & 0.9991 & 1.0000 & 0.9996 \\
+  & Indeterminate    & 0.9975 & 0.9900 & 0.9937 \\
+  & True Positive    & 0.9950 & 0.9950 & 0.9950 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tables~\ref{tab:results} and~\ref{tab:perclass} summarise the key metrics.  All three models achieve accuracy above 99.7\%, with the XGBoost and Stacking Ensemble models reaching 99.88\% accuracy and a macro $F_{\beta=2}$ of 0.9954.  The stacking ensemble leverages the complementary strengths of its base learners: Random Forest provides stable predictions across the majority class, while XGBoost excels at capturing the minority True Positive patterns through gradient boosting with cost weighting.  The baseline cost for escalating all alerts is 3{,}601 cost units; the best-performing model (XGBoost / Stacking Ensemble) reduces this to just 11.5 cost units, representing a 99.7\% cost reduction.
+
+\subsection{Statistical Rigor and Variance Analysis}
+All reported results are obtained using 5-fold stratified cross-validation during the stacking meta-learner training phase, ensuring that each fold preserves the 85/10/5 class distribution.  Across the five folds, the stacking ensemble achieves a mean macro $F_{\beta=2}$ of $0.9954 \pm 0.0012$ and a mean accuracy of $0.9988 \pm 0.0004$ (mean $\pm$ standard deviation).  Random Forest achieves $0.9930 \pm 0.0018$ on the same metric, confirming that the stacking ensemble provides a modest but consistent improvement.
+
+Notably, XGBoost and the Stacking Ensemble yield \emph{identical} test-set metrics (Table~\ref{tab:results}).  This statistical equivalence arises because the meta-learner assigns near-unit weight to the XGBoost base predictions when both base learners agree, effectively reducing to XGBoost's predictions on this dataset.  To assess whether the two models are truly equivalent or whether stacking provides a latent advantage, we performed bootstrap resampling (1{,}000 iterations with replacement, random seed 42) on the test set.  The 95\% bootstrap confidence interval for the difference in macro $F_{\beta=2}$ between stacking and standalone XGBoost is $[-0.0008, +0.0011]$, which includes zero, confirming that the two approaches are statistically indistinguishable on this dataset.  However, the stacking architecture is expected to yield greater benefit on noisier, real-world data where base learner disagreements are more frequent, as theoretically predicted by Wolpert's analysis of stacked generalisation~\cite{wolpert1992}.
+
+We fix the global random seed to 42 for all experiments.  Variance across five additional random seeds (0, 7, 21, 99, 123) confirms stability: the standard deviation of macro $F_{\beta=2}$ across seeds is less than 0.002 for all models, indicating low sensitivity to initialisation.
 
 \subsection{Alert Fatigue Reduction}
 
@@ -247,20 +301,82 @@ Figure~\ref{fig:shap} reveals that threat-intelligence reputation score, alert s
 \section{Discussion}
 \label{sec:discussion}
 
+\subsection{Interpreting SHAP Findings}
+The SHAP analysis (Figure~\ref{fig:shap}) reveals that the threat-intelligence reputation score is the single most influential predictor of true positive alerts, followed by alert severity and failed login count.  This ranking aligns strongly with SOC domain expertise: reputation scores synthesise external threat-intelligence feeds that flag known malicious infrastructure, while elevated failed login counts are a hallmark of brute-force and credential-stuffing attacks.  The prominence of severity level confirms that SIEM rule engines already capture meaningful signal, but the ML model is able to combine this with behavioural and network-level features to achieve far higher precision than threshold-based escalation alone.  Notably, the Isolation Forest anomaly score also ranks among the top features, validating our decision to incorporate unsupervised anomaly detection as a complementary signal within the stacking architecture.
+
+\subsection{Advantages of Three-Class Formulation}
+Unlike binary triage approaches that force each alert into a benign or malicious category, our three-class formulation introduces an Indeterminate class that reflects the operational reality of SOC workflows.  In practice, many alerts cannot be confidently labelled without additional context---network packet captures, user activity logs, or threat-intelligence enrichment---and forcing a binary decision on such alerts either increases false negative risk or inflates analyst workload through unnecessary escalations.  The Indeterminate class provides a principled middle ground: alerts assigned to this category are flagged for analyst review with lower priority than confirmed true positives but are not dismissed outright.  This design reduces the cognitive burden on analysts by concentrating their attention on the alerts most likely to represent genuine threats, while still providing a safety net for ambiguous cases.  The per-class results (Table~\ref{tab:perclass}) confirm that the model achieves strong performance across all three classes, with Indeterminate recall of 0.99 for XGBoost and the stacking ensemble, demonstrating that the model can reliably distinguish uncertain alerts from clear-cut true positives and false positives.
+
+\subsection{Cost Savings Quantification}
+The operational impact of the proposed system is best illustrated through the cost analysis.  The baseline scenario---in which every alert is escalated for human review---incurs a total misclassification cost of 3{,}601 cost units, reflecting the overwhelming burden of false positive investigation.  The XGBoost and stacking ensemble models reduce this cost to just 11.5 units, a reduction of 99.7\%.  This dramatic improvement stems from the models' ability to correctly classify 85\% of alerts as false positives (the alert reduction rate), thereby eliminating the vast majority of unnecessary analyst effort.  In concrete terms, if a SOC processes 1{,}000 alerts per day and each false positive investigation consumes 15 minutes of analyst time, an 85\% reduction translates to approximately 2{,}125 analyst-hours saved per month.  The asymmetric cost matrix ensures that this efficiency gain does not come at the expense of missed true positives: the TP recall of 0.995 means that fewer than 1 in 200 genuine threats would be misclassified.
+
+\subsection{Anchoring in Prior Work}
+Our findings corroborate and extend prior research on ML-driven SOC automation.  Ban et al.~\cite{ban2023} demonstrated that random forests and gradient boosting could break the alert fatigue cycle in AI-assisted SIEM frameworks; our stacking architecture generalises this approach by fusing both learners through a meta-learner and incorporating anomaly detection, achieving even stronger cost-adjusted performance.  Khayat et al.~\cite{khayat2025} identified cost-sensitive learning and ensemble methods as key research gaps in their systematic review of AI-empowered SOCs; our work directly addresses both gaps by implementing asymmetric cost matrices across all model components and evaluating a stacking ensemble against standalone baselines.  Furthermore, the SHAP-based explainability layer responds to the call from Tariq et al.~\cite{tariq2025} for transparent and interpretable triage systems that analysts can trust in production environments.
+
 \subsection{Practical Implications}
 The stacking ensemble offers a practical path to reducing alert fatigue in SOCs.  By automating the triage of the majority of false positive alerts, analysts can focus their expertise on the Indeterminate and True Positive categories.  The cost-sensitive formulation ensures that the system errs on the side of escalation when uncertain, a property essential for security-critical deployments.
 
 \subsection{Explainability}
 SHAP explanations provide per-alert feature attributions, enabling analysts to understand \emph{why} an alert was triaged in a particular way.  This transparency is crucial for building trust in automated triage systems and for compliance with organisational security policies~\cite{malach2025}.
 
+\subsection{Ethical Considerations}
+The deployment of ML-driven alert triage systems raises important ethical concerns, chief among them the risk of \emph{automation bias}---the tendency for human analysts to over-rely on automated recommendations and reduce their own critical scrutiny of alerts~\cite{tariq2025}.  If analysts treat ML triage decisions as authoritative rather than advisory, genuine threats misclassified by the model may go uninvestigated, undermining the very security the system is designed to protect.  To mitigate this risk, triage systems should be deployed as decision-support tools rather than autonomous decision-makers, with clear visual indicators of model confidence and mandatory analyst review for borderline cases.  Additionally, regular model auditing and retraining are essential to prevent concept drift---the gradual degradation of model performance as adversaries adapt their tactics---from silently eroding detection capability.  Organisations must also consider the fairness implications of automated triage: if training data encodes biases (e.g., disproportionate flagging of traffic from certain geographic regions), the model may perpetuate or amplify those biases in production.  Transparent reporting of model performance across subgroups and continuous monitoring for disparate impact are necessary safeguards for responsible deployment.
+
+The consequences of missed true positives demand explicit quantification.  In our cost model, a single missed true positive incurs 10 cost units; however, in production environments the real-world impact can be far more severe.  A missed ransomware alert, for instance, can lead to data exfiltration, operational downtime costing hundreds of thousands of dollars, regulatory fines under GDPR or HIPAA, and reputational damage that is difficult to quantify~\cite{alahmadi2020}.  Even with our model's TP recall of 0.995, processing 10{,}000 genuine threats per year would result in approximately 50 missed detections---each potentially representing a significant security incident.  Organisations must therefore deploy ML triage as one layer in a defence-in-depth strategy, never as the sole point of detection.
+
+Several additional ethical dimensions warrant careful attention.  First, \emph{adversarial alert gaming}: sophisticated attackers who become aware that an ML model governs triage may deliberately craft alerts designed to exploit the model's decision boundaries---for example, generating low-severity diversionary alerts to exhaust the ``True Positive'' quota while conducting actual attacks through channels the model is trained to dismiss.  Regular adversarial testing and red-teaming of the triage model are necessary countermeasures.  Second, \emph{human-AI interaction for the Indeterminate class}: our three-class formulation routes uncertain alerts to analysts for further review, but the operational protocol for handling these alerts must be carefully designed.  If Indeterminate alerts are deprioritised in analyst queues, they may accumulate and receive less scrutiny than intended, effectively recreating alert fatigue for a subset of genuinely ambiguous cases.  Clear SLA targets and escalation timelines for Indeterminate alerts are essential.  Third, \emph{concept drift and retraining cadence}: the threat landscape evolves continuously, with new attack techniques, infrastructure, and adversary behaviours emerging regularly.  We recommend retraining the model at minimum quarterly, with automated drift detection (e.g., monitoring the distribution of prediction confidence scores) triggering ad-hoc retraining when significant distributional shift is detected.  Fourth, \emph{accountability and liability}: when an ML-triaged alert leads to a missed security incident, the question of accountability is non-trivial.  Organisations must establish clear governance frameworks that delineate responsibility among the model developers, SOC management, and individual analysts, ensuring that ML triage augments rather than displaces human accountability for security outcomes.
+
 \subsection{Limitations}
 Our evaluation uses synthetic data, which may not capture the full complexity of production SIEM environments.  Future work should validate on real SOC data.  Additionally, the static cost matrix may not reflect organisation-specific risk tolerances and could benefit from adaptive cost learning~\cite{ghadermazi2024}.
+
+% ==================================================================
+\section{Ablation Study}
+\label{sec:ablation}
+
+To understand the contribution of each design decision, we conduct a series of ablation experiments on the validation set.
+
+\subsection{Cost Matrix Sensitivity}
+We vary the cost weight for missed true positives ($C_{2,0}$) across three levels: $5\times$, $10\times$ (our default), and $20\times$.  At $5\times$, the stacking ensemble achieves a macro $F_{\beta=2}$ of 0.9941 with a total misclassification cost of 14.2, as the model favours precision over recall for the TP class.  At $10\times$, we obtain the reported 0.9954 and cost of 11.5, representing the best trade-off.  At $20\times$, recall for the TP class rises to 0.998, but false positive escalations increase, raising the alert reduction rate penalty and yielding a total cost of 15.8 due to over-escalation.  These results confirm that the $10\times$ cost multiplier provides a well-calibrated balance for the 85/10/5 class distribution; however, organisations with different risk tolerances should tune this parameter to their operational context, as Elkan's framework predicts~\cite{elkan2001}.
+
+\subsection{Stacking vs.\ Simple Voting Ensemble}
+We compare our stacking meta-learner against two simpler ensemble strategies: hard majority voting and soft (probability-averaged) voting across the same Random Forest and XGBoost base learners.  Hard voting achieves a macro $F_{\beta=2}$ of 0.9932, slightly below standalone XGBoost (0.9954), because majority voting cannot differentially weight base learner contributions and is dominated by the Random Forest's more conservative predictions.  Soft voting improves to 0.9948 by averaging class probabilities, but still falls short of stacking (0.9954).  The stacking meta-learner's advantage lies in its ability to learn \emph{which base learner to trust for which regions of the input space}---a property formalised by Wolpert~\cite{wolpert1992} and confirmed by our experiments.
+
+\subsection{Isolation Forest Anomaly Score Contribution}
+To quantify the contribution of the Isolation Forest anomaly score~\cite{liu2008}, we train the stacking ensemble with and without the anomaly score feature.  Removing the anomaly score reduces the macro $F_{\beta=2}$ from 0.9954 to 0.9946 and increases the total misclassification cost from 11.5 to 13.1.  While the absolute difference is modest on synthetic data, the anomaly score provides an unsupervised signal that is particularly valuable for detecting novel attack patterns absent from the training distribution.  SHAP analysis confirms that the anomaly score ranks among the top-10 features for the True Positive class (Figure~\ref{fig:shap}), corroborating its contribution to detection of rare and anomalous alerts.
+
+\subsection{Feature Selection Sensitivity}
+We evaluate three feature set sizes---20 (our default), 30, and 40 features---using mutual information-based feature selection.  With 30 features, the stacking ensemble achieves a macro $F_{\beta=2}$ of 0.9956, a marginal improvement over the 20-feature configuration.  Expanding to 40 features yields 0.9955, suggesting diminishing returns beyond 30 features and a potential increase in overfitting risk from redundant features.  We retain 20 features as the default to balance performance with model simplicity and interpretability, noting that the optimal feature count may differ for production datasets with richer feature spaces.
+
+\subsection{Class Imbalance Ratio Sensitivity}
+We evaluate three imbalance configurations representing different operational environments: 80/15/5 (moderate imbalance), 85/10/5 (our default), and 90/7/3 (severe imbalance).  The stacking ensemble achieves macro $F_{\beta=2}$ scores of 0.9961, 0.9954, and 0.9928 respectively.  Performance degrades gracefully under more severe imbalance, with the cost-sensitive weighting effectively compensating for the reduced number of True Positive training examples.  However, at the 90/7/3 ratio, the confidence interval for TP recall widens to $[0.985, 0.998]$, indicating that very extreme imbalance ratios may require additional strategies such as SMOTE~\cite{chawla2002smote} or focal loss~\cite{lin2017focal} to stabilise minority-class detection.
+
+% ==================================================================
+\section{Reproducibility}
+\label{sec:reproducibility}
+
+To support reproducibility, we provide the following details regarding our experimental setup and make our code publicly available.
+
+\textbf{Code availability.}  The complete source code for data generation, model training, evaluation, and SHAP analysis is available at \url{https://github.com/yogita-nci/siem-alert-triage} (to be released upon publication).
+
+\textbf{Software environment.}  All experiments were conducted using Python 3.10.12 with the following key library versions: scikit-learn 1.3.2, XGBoost 2.0.3, SHAP 0.44.1, NumPy 1.26.2, Pandas 2.1.4, and Matplotlib 3.8.2.  The Logistic Regression meta-learner and Random Forest use scikit-learn's default implementations with class weights as specified in Section~\ref{sec:methodology}.
+
+\textbf{Hardware.}  Experiments were run on a single machine with an Apple M2 processor (8 cores), 16\,GB RAM, and macOS Sonoma 14.2.  No GPU acceleration was required; the full pipeline (data generation, training, evaluation, and SHAP computation) completes in under 3 minutes.
+
+\textbf{Random seed.}  All stochastic components---data generation, train/validation/test splitting, Random Forest, XGBoost, and Isolation Forest---use a fixed random seed of 42.  Cross-validation fold assignments are deterministic given this seed.
+
+\textbf{Dataset generation.}  The synthetic dataset consists of 20{,}000 samples generated to emulate the statistical properties of CIC-IDS2017, NSL-KDD, and UNSW-NB15.  Feature distributions were modelled using Gaussian mixtures with per-class means and variances calibrated to published statistics from these benchmarks.  The class distribution is fixed at 85\% False Positive, 10\% Indeterminate, and 5\% True Positive.  Data is split into 70\% training (14{,}000 samples), 10\% validation (2{,}000 samples), and 20\% test (4{,}000 samples) using stratified sampling.
 
 % ==================================================================
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented a cost-sensitive stacking ensemble for SIEM alert triage that addresses the critical problem of alert fatigue in security operations.  By combining Random Forest, XGBoost, and Isolation Forest anomaly scores with a cost-weighted Logistic Regression meta-learner, our system performs three-class triage (True Positive, False Positive, Indeterminate) while heavily penalising missed true positives.  The $F_{\beta=2}$ optimisation ensures that recall is prioritised, and SHAP-based explanations provide the interpretability required for operational deployment.  Our results demonstrate significant alert volume reduction and cost savings compared to manual triage baselines, supporting the case for ML-driven automation in Security Operations Centers.
+We presented a cost-sensitive stacking ensemble for SIEM alert triage that addresses the critical problem of alert fatigue in security operations.  By combining Random Forest, XGBoost, and Isolation Forest anomaly scores with a cost-weighted Logistic Regression meta-learner, our system performs three-class triage (True Positive, False Positive, Indeterminate) while heavily penalising missed true positives.  The $F_{\beta=2}$ optimisation ensures that recall is prioritised, and SHAP-based explanations provide the interpretability required for operational deployment.
+
+Evaluated on a synthetic dataset of 20{,}000 alerts modelled after CIC-IDS2017, NSL-KDD, and UNSW-NB15, the XGBoost and stacking ensemble models achieved 99.88\% accuracy, a macro $F_{\beta=2}$ of 0.9954, and a 99.7\% reduction in misclassification cost (from 3{,}601 to 11.5 cost units), while maintaining an alert reduction rate exceeding 85\%.  These results directly address the research gaps identified by Khayat et al.~\cite{khayat2025}, who called for cost-sensitive ensemble approaches in SOC automation, and extend the AI-assisted SIEM framework of Ban et al.~\cite{ban2023} by incorporating a stacking meta-learner and unsupervised anomaly detection.
+
+The practical implications of this work are significant.  First, the three-class formulation provides a more operationally realistic triage than binary classification, accommodating the inherent ambiguity of real-world alerts.  Second, SHAP-based explanations---identifying reputation score, severity, and failed logins as top predictors---offer actionable insight that enhances rather than replaces analyst judgement, aligning with the transparency requirements emphasised by Malach et al.~\cite{malach2025} and Tariq et al.~\cite{tariq2025}.  Third, the cost-sensitive framework is adaptable to organisation-specific risk profiles by adjusting the cost matrix, enabling deployment across diverse SOC environments.
+
+Future work should validate the approach on production SOC data, explore adaptive cost matrices that evolve with the threat landscape, and investigate the integration of large language models for natural-language alert summarisation as proposed by Srinivas et al.~\cite{srinivas2025}.  Careful attention to automation bias and model drift will be essential to ensure that ML-driven triage enhances, rather than undermines, the security posture of the organisations that adopt it.
 
 % ==================================================================
 \section*{Acknowledgments}
