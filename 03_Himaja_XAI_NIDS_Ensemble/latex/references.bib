@@ -1,6 +1,225 @@
+% ──────────────────────────────────────────────────────────────
+% Core XAI Methods
+% ──────────────────────────────────────────────────────────────
+
+@inproceedings{lundberg2017,
+  author    = {Lundberg, Scott M. and Lee, Su-In},
+  title     = {A Unified Approach to Interpreting Model Predictions},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {30},
+  pages     = {4765--4774},
+  year      = {2017}
+}
+
+@article{lundberg2020trees,
+  author  = {Lundberg, Scott M. and Erion, Gabriel and Chen, Hugh and DeGrave, Alex
+             and Prutkin, Jordan M. and Nair, Bala and Katz, Ronit and Himmelfarb, Jonathan
+             and Bansal, Nisha and Lee, Su-In},
+  title   = {From Local Explanations to Global Understanding with Explainable {AI} for Trees},
+  journal = {Nature Machine Intelligence},
+  volume  = {2},
+  number  = {1},
+  pages   = {56--67},
+  year    = {2020},
+  doi     = {10.1038/s42256-019-0138-9}
+}
+
+@inproceedings{ribeiro2016,
+  author    = {Ribeiro, Marco Tulio and Singh, Sameer and Guestrin, Carlos},
+  title     = {``{W}hy Should {I} Trust You?'': Explaining the Predictions of Any Classifier},
+  booktitle = {Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge
+               Discovery and Data Mining},
+  pages     = {1135--1144},
+  year      = {2016},
+  doi       = {10.1145/2939672.2939778}
+}
+
+@article{shapley1953,
+  author    = {Shapley, Lloyd S.},
+  title     = {A Value for n-Person Games},
+  journal   = {Contributions to the Theory of Games},
+  volume    = {2},
+  number    = {28},
+  pages     = {307--317},
+  year      = {1953},
+  publisher = {Princeton University Press}
+}
+
+% ──────────────────────────────────────────────────────────────
+% XAI Books and Surveys
+% ──────────────────────────────────────────────────────────────
+
+@book{molnar2020,
+  author    = {Molnar, Christoph},
+  title     = {Interpretable Machine Learning: A Guide for Making Black Box Models Explainable},
+  publisher = {Lulu.com},
+  year      = {2020},
+  edition   = {1st},
+  url       = {https://christophm.github.io/interpretable-ml-book/}
+}
+
+@article{arrieta2020,
+  author  = {Arrieta, Alejandro Barredo and D\'iaz-Rodr\'iguez, Natalia
+             and Del Ser, Javier and Bennetot, Adrien and Tabik, Siham
+             and Barbado, Alberto and Garc\'ia, Salvador and Gil-L\'opez, Sergio
+             and Molina, Daniel and Benjamins, Richard and Chatila, Raja
+             and Herrera, Francisco},
+  title   = {Explainable Artificial Intelligence ({XAI}): Concepts, Taxonomies,
+             Opportunities and Challenges toward Responsible {AI}},
+  journal = {Information Fusion},
+  volume  = {58},
+  pages   = {82--115},
+  year    = {2020},
+  doi     = {10.1016/j.inffus.2019.12.012}
+}
+
+@article{guidotti2018,
+  author  = {Guidotti, Riccardo and Monreale, Anna and Ruggieri, Salvatore
+             and Turini, Franco and Giannotti, Fosca and Pedreschi, Dino},
+  title   = {A Survey of Methods for Explaining Black Box Models},
+  journal = {ACM Computing Surveys},
+  volume  = {51},
+  number  = {5},
+  pages   = {1--42},
+  year    = {2018},
+  doi     = {10.1145/3236009}
+}
+
+% ──────────────────────────────────────────────────────────────
+% XAI Evaluation Metrics
+% ──────────────────────────────────────────────────────────────
+
+@inproceedings{bhatt2020,
+  author    = {Bhatt, Umang and Xiang, Alice and Sharma, Shubham and Weller, Adrian
+             and Taly, Ankur and Jia, Yunhan and Ghassemi, Marzyeh and Fogliato, Riccardo
+             and Melancon, Gabrielle and Krishnan, Ranganath and Stanley, Jason
+             and Tickoo, Omesh and Nachman, Lisa and Shaikh, Shayegan and Byrd, Daniel
+             and Marble, Talia and Bhatt, Harshdeep and Nystrom, Nicholas and Wiens, Jenna},
+  title     = {Explainable Machine Learning in Deployment},
+  booktitle = {Proceedings of the ACM Conference on Fairness, Accountability, and Transparency},
+  pages     = {648--657},
+  year      = {2020},
+  doi       = {10.1145/3351095.3375624}
+}
+
+@inproceedings{alvarezmelis2018,
+  author    = {Alvarez-Melis, David and Jaakkola, Tommi S.},
+  title     = {On the Robustness of Interpretability Methods},
+  booktitle = {ICML Workshop on Human Interpretability in Machine Learning},
+  year      = {2018}
+}
+
+% ──────────────────────────────────────────────────────────────
+% XAI Adversarial Attacks
+% ──────────────────────────────────────────────────────────────
+
+@inproceedings{slack2020,
+  author    = {Slack, Dylan and Hilgard, Sophie and Jia, Emily and Singh, Sameer
+               and Lakkaraju, Himabindu},
+  title     = {Fooling {LIME} and {SHAP}: Adversarial Attacks on Post Hoc Explanation Methods},
+  booktitle = {Proceedings of the AAAI/ACM Conference on AI, Ethics, and Society (AIES)},
+  pages     = {180--186},
+  year      = {2020},
+  doi       = {10.1145/3375627.3375830}
+}
+
+@inproceedings{heo2019,
+  author    = {Heo, Juyeon and Joo, Sunghwan and Moon, Taesup},
+  title     = {Fooling Neural Network Interpretations via Adversarial Model Manipulation},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {32},
+  year      = {2019}
+}
+
+% ──────────────────────────────────────────────────────────────
+% Explanation Consistency and Disagreement
+% ──────────────────────────────────────────────────────────────
+
+@article{krishna2022,
+  author  = {Krishna, Satyapriya and Han, Tessa and Ber, Alex and Brinton, Javin
+             and Pombra, Atman and Liao, Qiaozhu Vivian and Lakkaraju, Himabindu},
+  title   = {The Disagreement Problem in Explainable Machine Learning:
+             A Practitioner's Perspective},
+  journal = {arXiv preprint arXiv:2202.01602},
+  year    = {2022}
+}
+
+% ──────────────────────────────────────────────────────────────
+% NIDS Datasets and Benchmarks
+% ──────────────────────────────────────────────────────────────
+
+@inproceedings{moustafa2015,
+  author    = {Moustafa, Nour and Slay, Jill},
+  title     = {{UNSW-NB15}: A Comprehensive Data Set for Network Intrusion Detection Systems},
+  booktitle = {Proceedings of the 2015 Military Communications and Information Systems
+               Conference (MilCIS)},
+  pages     = {1--6},
+  year      = {2015},
+  doi       = {10.1109/MilCIS.2015.7348942}
+}
+
+@inproceedings{tavallaee2009,
+  author    = {Tavallaee, Mahbod and Bagheri, Ebrahim and Lu, Wei and Ghorbani, Ali A.},
+  title     = {A Detailed Analysis of the {KDD CUP 99} Data Set},
+  booktitle = {Proceedings of the IEEE Symposium on Computational Intelligence for
+               Security and Defense Applications (CISDA)},
+  pages     = {1--6},
+  year      = {2009},
+  doi       = {10.1109/CISDA.2009.5356528}
+}
+
+% ──────────────────────────────────────────────────────────────
+% Deep Learning and Ensemble Approaches for NIDS
+% ──────────────────────────────────────────────────────────────
+
+@article{ferrag2020,
+  author  = {Ferrag, Mohamed Amine and Maglaras, Leandros and Moschoyiannis, Sotiris
+             and Janicke, Helge},
+  title   = {Deep Learning for Cyber Security Intrusion Detection: Approaches, Datasets,
+             and Comparative Study},
+  journal = {Journal of Information Security and Applications},
+  volume  = {50},
+  pages   = {102419},
+  year    = {2020},
+  doi     = {10.1016/j.jisa.2019.102419}
+}
+
+@article{khraisat2019,
+  author  = {Khraisat, Ansam and Gondal, Iqbal and Vamplew, Peter and Kamruzzaman, Joarder},
+  title   = {Survey of Intrusion Detection Systems: Techniques, Datasets and Challenges},
+  journal = {Cybersecurity},
+  volume  = {2},
+  number  = {1},
+  pages   = {1--22},
+  year    = {2019},
+  doi     = {10.1186/s42400-019-0038-7}
+}
+
+@inproceedings{niyaz2016,
+  author    = {Niyaz, Quamar and Sun, Weiqing and Javaid, Ahmad Y.},
+  title     = {A Deep Learning Based {DDoS} Detection System in Software-Defined Networking ({SDN})},
+  booktitle = {Proceedings of the 11th EAI International Conference on Bio-inspired
+               Information and Communications Technologies},
+  year      = {2016},
+  doi       = {10.4108/eai.3-12-2015.2262516}
+}
+
+@article{mahrishi2021,
+  author  = {Mahrishi, Mehul and Hiran, Kamal Kumar and Meena, Gaurav and Sharma, Piyush},
+  title   = {Machine Learning and Deep Learning in Real-Time Applications},
+  journal = {IGI Global},
+  year    = {2021},
+  doi     = {10.4018/978-1-7998-3095-5}
+}
+
+% ──────────────────────────────────────────────────────────────
+% XAI-Integrated NIDS
+% ──────────────────────────────────────────────────────────────
+
 @article{alabbadi2025,
   author  = {Alabbadi, Anas and Bajaber, Fuad},
-  title   = {An Intrusion Detection System over the {IoT} Data Streams Using {eXplainable} Artificial Intelligence ({XAI})},
+  title   = {An Intrusion Detection System over the {IoT} Data Streams Using
+             {eXplainable} Artificial Intelligence ({XAI})},
   journal = {Sensors},
   volume  = {25},
   number  = {3},
@@ -11,7 +230,8 @@
 
 @article{alamro2025,
   author  = {Alamro, Hayfa and Alahmari, Saad and Nemri, Noura and Aljebreen, Mohammed},
-  title   = {Enhanced Intrusion Detection in Cybersecurity through Dimensionality Reduction and Explainable Artificial Intelligence},
+  title   = {Enhanced Intrusion Detection in Cybersecurity through Dimensionality Reduction
+             and Explainable Artificial Intelligence},
   journal = {Scientific Reports},
   volume  = {15},
   pages   = {33848},
@@ -20,8 +240,11 @@
 }
 
 @article{fatema2025,
-  author  = {Fatema, Kaniz and Dey, Samrat Kumar and Anannya, Mushfiqur and Khan, Rafiqul Tanim and Rashid, Mamunur and Su, Chunhua and Mazumder, Riasat},
-  title   = {Federated {XAI} {IDS}: An Explainable and Safeguarding Privacy Approach to Detect Intrusion Combining Federated Learning and {SHAP}},
+  author  = {Fatema, Kaniz and Dey, Samrat Kumar and Anannya, Mushfiqur
+             and Khan, Rafiqul Tanim and Rashid, Mamunur and Su, Chunhua
+             and Mazumder, Riasat},
+  title   = {Federated {XAI} {IDS}: An Explainable and Safeguarding Privacy Approach
+             to Detect Intrusion Combining Federated Learning and {SHAP}},
   journal = {Future Internet},
   volume  = {17},
   number  = {6},
@@ -31,8 +254,10 @@
 }
 
 @article{khan2025,
-  author  = {Khan, Nasir and Ahmad, Kashif and Al Tamimi, Ahmad and Alani, Mohamed M. and Bermak, Amine and Khalil, Ibrahim},
-  title   = {Explainable {AI}-Based Intrusion Detection Systems for Industry 5.0 and Adversarial {XAI}: A Systematic Review},
+  author  = {Khan, Nasir and Ahmad, Kashif and Al Tamimi, Ahmad and Alani, Mohamed M.
+             and Bermak, Amine and Khalil, Ibrahim},
+  title   = {Explainable {AI}-Based Intrusion Detection Systems for Industry 5.0 and
+             Adversarial {XAI}: A Systematic Review},
   journal = {Information},
   volume  = {16},
   number  = {12},
@@ -42,8 +267,10 @@
 }
 
 @article{pawlicki2024,
-  author  = {Pawlicki, Marek and Pawlicka, Aleksandra and Kozik, Rafal and Chora\'{s}, Micha\l{}},
-  title   = {The Survey on the Dual Nature of {xAI} Challenges in Intrusion Detection and Their Potential for {AI} Innovation},
+  author  = {Pawlicki, Marek and Pawlicka, Aleksandra and Kozik, Rafal
+             and Chora\'{s}, Micha\l{}},
+  title   = {The Survey on the Dual Nature of {xAI} Challenges in Intrusion Detection
+             and Their Potential for {AI} Innovation},
   journal = {Artificial Intelligence Review},
   volume  = {57},
   number  = {12},
@@ -64,7 +291,9 @@
 
 @article{zibi2025a,
   author  = {Zibi, Mfon V. and Obagbuwa, Ibidun C.},
-  title   = {A Systematic Review on the Integration of Explainable Artificial Intelligence in Intrusion Detection Systems to Enhancing Transparency and Interpretability in Cybersecurity},
+  title   = {A Systematic Review on the Integration of Explainable Artificial Intelligence
+             in Intrusion Detection Systems to Enhancing Transparency and Interpretability
+             in Cybersecurity},
   journal = {Frontiers in Artificial Intelligence},
   volume  = {8},
   year    = {2025},
@@ -73,99 +302,42 @@
 
 @article{zibi2025b,
   author  = {Zibi, Mfon V. and Obagbuwa, Ibidun C.},
-  title   = {Evaluating Machine Learning-Based Intrusion Detection Systems with Explainable {AI}: Enhancing Transparency and Interpretability},
+  title   = {Evaluating Machine Learning-Based Intrusion Detection Systems with Explainable
+             {AI}: Enhancing Transparency and Interpretability},
   journal = {Frontiers in Computer Science},
   volume  = {7},
   year    = {2025},
   doi     = {10.3389/fcomp.2025.1520741}
 }
 
-@inproceedings{lundberg2017,
-  author    = {Lundberg, Scott M. and Lee, Su-In},
-  title     = {A Unified Approach to Interpreting Model Predictions},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
-  volume    = {30},
-  pages     = {4765--4774},
-  year      = {2017}
+% ──────────────────────────────────────────────────────────────
+% Regulatory Frameworks
+% ──────────────────────────────────────────────────────────────
+
+@techreport{gdpr2016,
+  author      = {{European Parliament and Council of the European Union}},
+  title       = {Regulation ({EU}) 2016/679 on the Protection of Natural Persons with
+                 Regard to the Processing of Personal Data (General Data Protection Regulation)},
+  institution = {Official Journal of the European Union},
+  number      = {L 119},
+  pages       = {1--88},
+  year        = {2016}
 }
 
-@inproceedings{ribeiro2016,
-  author    = {Ribeiro, Marco Tulio and Singh, Sameer and Guestrin, Carlos},
-  title     = {``{W}hy Should {I} Trust You?'': Explaining the Predictions of Any Classifier},
-  booktitle = {Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
-  pages     = {1135--1144},
-  year      = {2016},
-  doi       = {10.1145/2939672.2939778}
+@techreport{euaiact2024,
+  author      = {{European Parliament and Council of the European Union}},
+  title       = {Regulation ({EU}) 2024/1689 Laying Down Harmonised Rules on Artificial
+                 Intelligence (Artificial Intelligence Act)},
+  institution = {Official Journal of the European Union},
+  number      = {L series},
+  year        = {2024}
 }
 
-@article{shapley1953,
-  author  = {Shapley, Lloyd S.},
-  title   = {A Value for n-Person Games},
-  journal = {Contributions to the Theory of Games},
-  volume  = {2},
-  number  = {28},
-  pages   = {307--317},
-  year    = {1953},
-  publisher = {Princeton University Press}
-}
-
-@article{moustafa2015,
-  author  = {Moustafa, Nour and Slay, Jill},
-  title   = {{UNSW-NB15}: A Comprehensive Data Set for Network Intrusion Detection Systems},
-  journal = {Proceedings of the 2015 Military Communications and Information Systems Conference (MilCIS)},
-  pages   = {1--6},
-  year    = {2015},
-  doi     = {10.1109/MilCIS.2015.7348942}
-}
-
-@article{tavallaee2009,
-  author  = {Tavallaee, Mahbod and Bagheri, Ebrahim and Lu, Wei and Ghorbani, Ali A.},
-  title   = {A Detailed Analysis of the {KDD CUP 99} Data Set},
-  journal = {Proceedings of the IEEE Symposium on Computational Intelligence for Security and Defense Applications (CISDA)},
-  pages   = {1--6},
-  year    = {2009},
-  doi     = {10.1109/CISDA.2009.5356528}
-}
-
-@article{krishna2022,
-  author  = {Krishna, Satyapriya and Han, Tessa and Ber, Alex and Brinton, Javin and Pombra, Atman and Liao, Qiaozhu Vivian and Lakkaraju, Himabindu},
-  title   = {The Disagreement Problem in Explainable Machine Learning: A Practitioner's Perspective},
-  journal = {arXiv preprint arXiv:2202.01602},
-  year    = {2022}
-}
-
-@article{euaiact2024,
-  author  = {{European Parliament and Council of the European Union}},
-  title   = {Regulation ({EU}) 2024/1689 Laying Down Harmonised Rules on Artificial Intelligence (Artificial Intelligence Act)},
-  journal = {Official Journal of the European Union},
-  volume  = {L series},
-  year    = {2024}
-}
-
-@article{gdpr2016,
-  author  = {{European Parliament and Council of the European Union}},
-  title   = {Regulation ({EU}) 2016/679 on the Protection of Natural Persons with Regard to the Processing of Personal Data (General Data Protection Regulation)},
-  journal = {Official Journal of the European Union},
-  volume  = {L 119},
-  pages   = {1--88},
-  year    = {2016}
-}
-
-@article{ferrag2020,
-  author  = {Ferrag, Mohamed Amine and Maglaras, Leandros and Moschoyiannis, Sotiris and Janicke, Helge},
-  title   = {Deep Learning for Cyber Security Intrusion Detection: Approaches, Datasets, and Comparative Study},
-  journal = {Journal of Information Security and Applications},
-  volume  = {50},
-  pages   = {102419},
-  year    = {2020},
-  doi     = {10.1016/j.jisa.2019.102419}
-}
-
-@article{slack2020,
-  author  = {Slack, Dylan and Hilgard, Sophie and Jia, Emily and Singh, Sameer and Lakkaraju, Himabindu},
-  title   = {Fooling {LIME} and {SHAP}: Adversarial Attacks on Post Hoc Explanation Methods},
-  journal = {Proceedings of the AAAI/ACM Conference on AI, Ethics, and Society (AIES)},
-  pages   = {180--186},
-  year    = {2020},
-  doi     = {10.1145/3375627.3375830}
+@techreport{nistairf2023,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {Artificial Intelligence Risk Management Framework ({AI} {RMF} 1.0)},
+  institution = {National Institute of Standards and Technology},
+  number      = {NIST AI 100-1},
+  year        = {2023},
+  doi         = {10.6028/NIST.AI.100-1}
 }

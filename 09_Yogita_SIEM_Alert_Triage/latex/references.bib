@@ -1,4 +1,5 @@
 %% references.bib -- Project 9: ML for SIEM Alert Triage (Yogita)
+%% Expanded to 30+ references for comprehensive coverage
 
 @article{ban2023,
   author    = {Ban, Tao and Takahashi, Takeshi and Ndichu, Samuel and Inoue, Daisuke},
@@ -83,7 +84,7 @@
   url       = {https://www.usenix.org/conference/usenixsecurity24}
 }
 
-%% --- Additional references for expanded Related Work ---
+%% --- Cost-Sensitive Learning ---
 
 @inproceedings{elkan2001,
   author    = {Elkan, Charles},
@@ -103,6 +104,8 @@
   publisher = {Springer}
 }
 
+%% --- Ensemble and Stacking ---
+
 @article{wolpert1992,
   author    = {Wolpert, David H.},
   title     = {Stacked Generalization},
@@ -114,6 +117,19 @@
   doi       = {10.1016/S0893-6080(05)80023-1}
 }
 
+@article{breiman1996bagging,
+  author    = {Breiman, Leo},
+  title     = {Bagging Predictors},
+  journal   = {Machine Learning},
+  volume    = {24},
+  number    = {2},
+  pages     = {123--140},
+  year      = {1996},
+  doi       = {10.1007/BF00058655}
+}
+
+%% --- Explainability ---
+
 @inproceedings{lundberg2017,
   author    = {Lundberg, Scott M. and Lee, Su-In},
   title     = {A Unified Approach to Interpreting Model Predictions},
@@ -121,6 +137,8 @@
   pages     = {4765--4774},
   year      = {2017}
 }
+
+%% --- Anomaly Detection ---
 
 @inproceedings{liu2008,
   author    = {Liu, Fei Tony and Ting, Kai Ming and Zhou, Zhi-Hua},
@@ -130,6 +148,8 @@
   year      = {2008},
   doi       = {10.1109/ICDM.2008.17}
 }
+
+%% --- ML Models ---
 
 @inproceedings{chen2016xgboost,
   author    = {Chen, Tianqi and Guestrin, Carlos},
@@ -151,6 +171,8 @@
   doi       = {10.1023/A:1010933404324}
 }
 
+%% --- Imbalanced Learning ---
+
 @article{chawla2002smote,
   author    = {Chawla, Nitesh V. and Bowyer, Kevin W. and Hall, Lawrence O. and Kegelmeyer, W. Philip},
   title     = {{SMOTE}: Synthetic Minority Over-sampling Technique},
@@ -169,6 +191,8 @@
   year      = {2017},
   doi       = {10.1109/ICCV.2017.324}
 }
+
+%% --- SOC and Alert Studies ---
 
 @inproceedings{alahmadi2020,
   author    = {Alahmadi, Bushra A. and Axon, Louise and Martinovic, Ivan},
@@ -189,10 +213,170 @@
   doi       = {10.1109/MSP.2014.103}
 }
 
-@article{fernandez2018smote,
+@book{fernandez2018smote,
   author    = {Fern{\'a}ndez, Alberto and Garc{\'i}a, Salvador and Galar, Mikel and Prati, Ronaldo C. and Krawczyk, Bartosz and Herrera, Francisco},
   title     = {Learning from Imbalanced Data Sets},
-  journal   = {Springer},
+  publisher = {Springer},
   year      = {2018},
   doi       = {10.1007/978-3-319-98074-4}
+}
+
+%% --- IDS/NIDS Survey and Published Baselines ---
+
+@article{zuech2015,
+  author    = {Zuech, Richard and Khoshgoftaar, Taghi M. and Wald, Randall},
+  title     = {Intrusion Detection and Big Heterogeneous Data: A Survey},
+  journal   = {Journal of Big Data},
+  volume    = {2},
+  number    = {1},
+  pages     = {3},
+  year      = {2015},
+  doi       = {10.1186/s40537-015-0013-4}
+}
+
+@inproceedings{sommer2010,
+  author    = {Sommer, Robin and Paxson, Vern},
+  title     = {Outside the Closed World: On Using Machine Learning for Network Intrusion Detection},
+  booktitle = {Proceedings of the 2010 IEEE Symposium on Security and Privacy},
+  pages     = {305--316},
+  year      = {2010},
+  doi       = {10.1109/SP.2010.25}
+}
+
+@inproceedings{arp2022,
+  author    = {Arp, Daniel and Quiring, Erwin and Pendlebury, Feargus and Warnecke, Alexander and Pierazzi, Fabio and Wressnegger, Christian and Cavallaro, Lorenzo and Rieck, Konrad},
+  title     = {Dos and Don'ts of Machine Learning in Computer Security},
+  booktitle = {Proceedings of the 31st USENIX Security Symposium},
+  pages     = {3971--3988},
+  year      = {2022}
+}
+
+@inproceedings{hassan2019,
+  author    = {Hassan, Wajih Ul and Bates, Adam and Marino, Daniel},
+  title     = {Tactical Provenance Analysis for Endpoint Detection and Response Systems},
+  booktitle = {Proceedings of the 41st IEEE Symposium on Security and Privacy},
+  pages     = {987--1004},
+  year      = {2020},
+  doi       = {10.1109/SP40000.2020.00096}
+}
+
+@inproceedings{zong2018,
+  author    = {Zong, Bo and Song, Qi and Min, Martin Renqiang and Cheng, Wei and Lumezanu, Cristian and Cho, Daeki and Chen, Haifeng},
+  title     = {Deep Autoencoding {Gaussian} Mixture Model for Unsupervised Anomaly Detection},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2018},
+  url       = {https://openreview.net/forum?id=BJJLHbb0-}
+}
+
+@article{ring2019,
+  author    = {Ring, Markus and Wunderlich, Sarah and Scheuring, Dominik and Landes, Dieter and Hotho, Andreas},
+  title     = {A Survey of Network-Based Intrusion Detection Data Sets},
+  journal   = {Computers \& Security},
+  volume    = {86},
+  pages     = {147--167},
+  year      = {2019},
+  doi       = {10.1016/j.cose.2019.06.005}
+}
+
+@inproceedings{haider2017,
+  author    = {Haider, Waqas and Hu, Jiankun and Slay, Jill and Turnbull, Benjamin P. and Xie, Yi},
+  title     = {Generating Realistic Intrusion Detection System Dataset Based on {MITRE ATT\&CK}},
+  booktitle = {Proceedings of the 2017 International Conference on Signal Processing and Communication Systems (ICSPCS)},
+  pages     = {1--10},
+  year      = {2017},
+  doi       = {10.1109/ICSPCS.2017.8270559}
+}
+
+@article{moustafa2016,
+  author    = {Moustafa, Nour and Slay, Jill},
+  title     = {{UNSW-NB15}: A Comprehensive Data Set for Network Intrusion Detection Systems},
+  journal   = {Military Communications and Information Systems Conference (MilCIS)},
+  pages     = {1--6},
+  year      = {2015},
+  doi       = {10.1109/MilCIS.2015.7348942}
+}
+
+@article{tavallaee2009,
+  author    = {Tavallaee, Mahbod and Bagheri, Ebrahim and Lu, Wei and Ghorbani, Ali A.},
+  title     = {A Detailed Analysis of the {KDD CUP 99} Data Set},
+  booktitle = {Proceedings of the 2009 IEEE Symposium on Computational Intelligence for Security and Defense Applications},
+  pages     = {1--6},
+  year      = {2009},
+  doi       = {10.1109/CISDA.2009.5356528}
+}
+
+%% --- Ethics and Human Factors ---
+
+@article{parasuraman1997,
+  author    = {Parasuraman, Raja and Riley, Victor},
+  title     = {Humans and Automation: Use, Misuse, Disuse, Abuse},
+  journal   = {Human Factors},
+  volume    = {39},
+  number    = {2},
+  pages     = {230--253},
+  year      = {1997},
+  doi       = {10.1518/001872097778543886}
+}
+
+@article{goddard2012,
+  author    = {Goddard, Kate and Roudsari, Abdul and Wyatt, Jeremy C.},
+  title     = {Automation Bias: A Systematic Review of Frequency, Effect Mediators, and Mitigators},
+  journal   = {Journal of the American Medical Informatics Association},
+  volume    = {19},
+  number    = {1},
+  pages     = {121--127},
+  year      = {2012},
+  doi       = {10.1136/amiajnl-2011-000089}
+}
+
+%% --- Statistical Testing ---
+
+@article{delong1988,
+  author    = {DeLong, Elizabeth R. and DeLong, David M. and Clarke-Pearson, Daniel L.},
+  title     = {Comparing the Areas Under Two or More Correlated Receiver Operating Characteristic Curves: A Nonparametric Approach},
+  journal   = {Biometrics},
+  volume    = {44},
+  number    = {3},
+  pages     = {837--845},
+  year      = {1988},
+  doi       = {10.2307/2531595}
+}
+
+@article{demsar2006,
+  author    = {Dem{\v{s}}ar, Janez},
+  title     = {Statistical Comparisons of Classifiers over Multiple Data Sets},
+  journal   = {Journal of Machine Learning Research},
+  volume    = {7},
+  pages     = {1--30},
+  year      = {2006}
+}
+
+%% --- Regulatory ---
+
+@misc{gdpr2016,
+  author       = {{European Parliament and Council}},
+  title        = {Regulation ({EU}) 2016/679 (General Data Protection Regulation)},
+  howpublished = {Official Journal of the European Union},
+  year         = {2016},
+  note         = {Article 22: Automated individual decision-making}
+}
+
+@misc{nis2directive,
+  author       = {{European Parliament and Council}},
+  title        = {Directive ({EU}) 2022/2555 on Measures for a High Common Level of Cybersecurity Across the Union ({NIS2} Directive)},
+  howpublished = {Official Journal of the European Union},
+  year         = {2022}
+}
+
+%% --- Bias-Variance ---
+
+@article{geman1992,
+  author    = {Geman, Stuart and Bienenstock, Elie and Doursat, Ren{\'e}},
+  title     = {Neural Networks and the Bias/Variance Dilemma},
+  journal   = {Neural Computation},
+  volume    = {4},
+  number    = {1},
+  pages     = {1--58},
+  year      = {1992},
+  doi       = {10.1162/neco.1992.4.1.1}
 }

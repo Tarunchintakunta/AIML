@@ -1,3 +1,11 @@
+% ============================================================
+% References for: Explainable Multi-Modal Phishing Detection
+% Student: Vaishnavi Purohit (x24260339)
+% National College of Ireland
+% ============================================================
+
+% --- Core phishing detection papers ---
+
 @article{alsubaiey2024,
   author    = {Al-Subaiey, Abdulla and Al-Thani, Mohammed and Alam, Naser Abdullah and Antora, Kaniz Fatema and Khandakar, Amith and Zaman, SM Ashfaq Uz},
   title     = {Novel Interpretable and Robust Web-Based {AI} Platform for Phishing Email Detection},
@@ -71,6 +79,8 @@
   doi       = {10.1016/j.dsm.2024.08.004}
 }
 
+% --- XAI foundational papers ---
+
 @inproceedings{lundberg2017,
   author    = {Lundberg, Scott M. and Lee, Su-In},
   title     = {A Unified Approach to Interpreting Model Predictions},
@@ -91,6 +101,8 @@
   doi       = {10.1145/2939672.2939778}
 }
 
+% --- Multi-modal learning ---
+
 @article{baltrusaitis2019,
   author    = {Baltru\v{s}aitis, Tadas and Ahuja, Chaitanya and Morency, Louis-Philippe},
   title     = {Multimodal Machine Learning: A Survey and Taxonomy},
@@ -101,6 +113,8 @@
   year      = {2019},
   doi       = {10.1109/TPAMI.2018.2798607}
 }
+
+% --- Phishing datasets and benchmarks ---
 
 @article{mohammad2015,
   author    = {Mohammad, Rami M. and Thabtah, Fadi and McCluskey, Lee},
@@ -113,15 +127,97 @@
   doi       = {10.1016/j.eswa.2014.09.018}
 }
 
-@inproceedings{sahingoz2019,
+@article{mohammad2014,
+  author    = {Mohammad, Rami M. and Thabtah, Fadi and McCluskey, Lee},
+  title     = {Predicting Phishing Websites Based on Self-Structuring Neural Network},
+  journal   = {Neural Computing and Applications},
+  volume    = {25},
+  number    = {2},
+  pages     = {443--458},
+  year      = {2014},
+  doi       = {10.1007/s00521-013-1490-z}
+}
+
+% --- URL-based phishing detection ---
+
+@article{sahingoz2019,
   author    = {Sahingoz, Ozgur Koray and Buber, Ebubekir and Demir, Onder and Diri, Banu},
   title     = {Machine Learning Based Phishing Detection from {URL}s},
-  booktitle = {Expert Systems with Applications},
+  journal   = {Expert Systems with Applications},
   volume    = {117},
   pages     = {345--357},
   year      = {2019},
   doi       = {10.1016/j.eswa.2018.09.029}
 }
+
+@article{raopais2019,
+  author    = {Rao, Routhu Srinivasa and Pais, Alwyn Roshan},
+  title     = {Detection of Phishing Websites Using an Efficient Feature-Based Machine Learning Framework},
+  journal   = {Neural Computing and Applications},
+  volume    = {31},
+  number    = {8},
+  pages     = {3851--3873},
+  year      = {2019},
+  doi       = {10.1007/s00521-017-3305-0}
+}
+
+@inproceedings{whittaker2010,
+  author    = {Whittaker, Colin and Ryner, Brian and Nazif, Marria},
+  title     = {Large-Scale Automatic Classification of Phishing Pages},
+  booktitle = {Proceedings of the 17th Annual Network and Distributed System Security Symposium (NDSS)},
+  year      = {2010},
+  publisher = {Internet Society}
+}
+
+@inproceedings{jain2018,
+  author    = {Jain, Ankit Kumar and Gupta, B. B.},
+  title     = {A Survey of Phishing Attack Techniques, Defence Mechanisms and Open Research Challenges},
+  booktitle = {Enterprise Information Systems},
+  volume    = {12},
+  number    = {9},
+  pages     = {1086--1136},
+  year      = {2018},
+  doi       = {10.1080/17517575.2018.1483908}
+}
+
+@article{fette2007,
+  author    = {Fette, Ian and Sadeh, Norman and Tomasic, Anthony},
+  title     = {{PILFER}: Detecting Phishing Email Using Machine Learning},
+  journal   = {Carnegie Mellon University Technical Report CMU-ISRI-06-112},
+  year      = {2007}
+}
+
+@inproceedings{pan2006,
+  author    = {Pan, Ying and Ding, Xuhua},
+  title     = {Anomaly Based Web Phishing Page Detection},
+  booktitle = {Proceedings of the 22nd Annual Computer Security Applications Conference (ACSAC)},
+  pages     = {381--392},
+  year      = {2006},
+  publisher = {IEEE},
+  doi       = {10.1109/ACSAC.2006.13}
+}
+
+@article{basnet2012,
+  author    = {Basnet, Ram B. and Sung, Andrew H. and Liu, Quingzhong},
+  title     = {Learning to Detect Phishing {URLs}},
+  journal   = {IJCSI International Journal of Computer Science Issues},
+  volume    = {9},
+  number    = {2},
+  pages     = {294--300},
+  year      = {2012}
+}
+
+@inproceedings{zhang2007,
+  author    = {Zhang, Yue and Hong, Jason I. and Cranor, Lorrie F.},
+  title     = {{CANTINA}: A Content-Based Approach to Detecting Phishing Web Sites},
+  booktitle = {Proceedings of the 16th International Conference on World Wide Web},
+  pages     = {639--648},
+  year      = {2007},
+  publisher = {ACM},
+  doi       = {10.1145/1242572.1242659}
+}
+
+% --- Adversarial robustness ---
 
 @inproceedings{liang2016,
   author    = {Liang, Bin and Su, Jinshu and Redi, M. and others},
@@ -135,7 +231,7 @@
 
 @article{corona2017,
   author    = {Corona, Igino and Biggio, Battista and Contini, Matteo and Piras, Luca and Corda, Roberto and Mereu, Mauro and Mureddu, Guido and Ariu, Davide and Roli, Fabio},
-  title     = {DeltaPhish: Detecting Phishing Pages in Compromised Websites},
+  title     = {{DeltaPhish}: Detecting Phishing Pages in Compromised Websites},
   journal   = {Computer Networks},
   volume    = {127},
   pages     = {22--37},
@@ -150,4 +246,146 @@
   pages     = {1--20},
   year      = {2023},
   publisher = {IEEE}
+}
+
+% --- Deep learning for phishing ---
+
+@article{le2018,
+  author    = {Le, Hung and Pham, Quang and Sahoo, Doyen and Hoi, Steven C. H.},
+  title     = {{URLNet}: Learning a {URL} Representation with Deep Learning for Malicious {URL} Detection},
+  journal   = {arXiv preprint arXiv:1802.03162},
+  year      = {2018}
+}
+
+@inproceedings{devlin2019,
+  author    = {Devlin, Jacob and Chang, Ming-Wei and Lee, Kenton and Toutanova, Kristina},
+  title     = {{BERT}: Pre-training of Deep Bidirectional Transformers for Language Understanding},
+  booktitle = {Proceedings of NAACL-HLT 2019},
+  pages     = {4171--4186},
+  year      = {2019},
+  publisher = {Association for Computational Linguistics},
+  doi       = {10.18653/v1/N19-1423}
+}
+
+% --- Ensemble learning ---
+
+@article{breiman2001,
+  author    = {Breiman, Leo},
+  title     = {Random Forests},
+  journal   = {Machine Learning},
+  volume    = {45},
+  number    = {1},
+  pages     = {5--32},
+  year      = {2001},
+  doi       = {10.1023/A:1010933404324}
+}
+
+@inproceedings{chen2016,
+  author    = {Chen, Tianqi and Guestrin, Carlos},
+  title     = {{XGBoost}: A Scalable Tree Boosting System},
+  booktitle = {Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  pages     = {785--794},
+  year      = {2016},
+  publisher = {ACM},
+  doi       = {10.1145/2939672.2939785}
+}
+
+@inproceedings{ke2017,
+  author    = {Ke, Guolin and Meng, Qi and Finley, Thomas and Wang, Taifeng and Chen, Wei and Ma, Weidong and Ye, Qiwei and Liu, Tie-Yan},
+  title     = {{LightGBM}: A Highly Efficient Gradient Boosting Decision Tree},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {30},
+  year      = {2017},
+  publisher = {Curran Associates, Inc.}
+}
+
+% --- Statistical testing ---
+
+@book{demsar2006,
+  author    = {Dem{\v{s}}ar, Janez},
+  title     = {Statistical Comparisons of Classifiers over Multiple Data Sets},
+  journal   = {Journal of Machine Learning Research},
+  volume    = {7},
+  pages     = {1--30},
+  year      = {2006}
+}
+
+% --- Cybersecurity and threat landscape ---
+
+@techreport{apwg2023,
+  author      = {{Anti-Phishing Working Group}},
+  title       = {Phishing Activity Trends Report, Q4 2023},
+  institution = {APWG},
+  year        = {2023},
+  url         = {https://apwg.org/trendsreports/}
+}
+
+@techreport{proofpoint2023,
+  author      = {{Proofpoint Inc.}},
+  title       = {2023 State of the Phish Report},
+  institution = {Proofpoint},
+  year        = {2023},
+  url         = {https://www.proofpoint.com/us/resources/threat-reports/state-of-phish}
+}
+
+% --- Email security standards ---
+
+@article{schafer2016,
+  author    = {Sch\"{a}fer, Michael and Fuchs, Max and Nast, Tobias and Herrmann, Dominik},
+  title     = {Towards Comprehensible Analysis of Phishing Indicators},
+  journal   = {International Journal of Electronic Security and Digital Forensics},
+  volume    = {8},
+  number    = {4},
+  pages     = {328--347},
+  year      = {2016},
+  doi       = {10.1504/IJESDF.2016.079641}
+}
+
+% --- Feature engineering / NLP ---
+
+@article{salton1988,
+  author    = {Salton, Gerard and Buckley, Christopher},
+  title     = {Term-Weighting Approaches in Automatic Text Retrieval},
+  journal   = {Information Processing \& Management},
+  volume    = {24},
+  number    = {5},
+  pages     = {513--523},
+  year      = {1988},
+  doi       = {10.1016/0306-4573(88)90021-0}
+}
+
+% --- Shapley value theory ---
+
+@incollection{shapley1953,
+  author    = {Shapley, Lloyd S.},
+  title     = {A Value for $n$-Person Games},
+  booktitle = {Contributions to the Theory of Games},
+  editor    = {Kuhn, Harold W. and Tucker, Albert W.},
+  volume    = {2},
+  pages     = {307--317},
+  publisher = {Princeton University Press},
+  year      = {1953}
+}
+
+% --- Fairness and bias in ML ---
+
+@article{mehrabi2021,
+  author    = {Mehrabi, Ninareh and Morstatter, Fred and Saxena, Nripsuta and Lerman, Kristina and Galstyan, Aram},
+  title     = {A Survey on Bias and Fairness in Machine Learning},
+  journal   = {ACM Computing Surveys},
+  volume    = {54},
+  number    = {6},
+  pages     = {1--35},
+  year      = {2021},
+  doi       = {10.1145/3457607}
+}
+
+% --- GDPR and data privacy ---
+
+@article{voigt2017,
+  author    = {Voigt, Paul and von dem Bussche, Axel},
+  title     = {The {EU} General Data Protection Regulation ({GDPR}): A Practical Guide},
+  journal   = {Springer International Publishing},
+  year      = {2017},
+  doi       = {10.1007/978-3-319-57959-7}
 }

@@ -1,21 +1,168 @@
-@article{abdelaziz2025,
-  author  = {Abd Elaziz, Mohamed and Fares, Ibrahim A. and Dahou, Abdelghani and Shrahili, Mansour},
-  title   = {Federated Learning Framework for {IoT} Intrusion Detection Using Tab Transformer and Nature-Inspired Hyperparameter Optimization},
-  journal = {Frontiers in Big Data},
-  volume  = {8},
-  pages   = {1526480},
-  year    = {2025},
-  doi     = {10.3389/fdata.2025.1526480}
+% ============================================================
+%  References — Federated Learning for Privacy-Preserving CTI
+%  Expanded to 28 entries for comprehensive coverage
+% ============================================================
+
+% ---- Foundational FL ----------------------------------------
+
+@inproceedings{mcmahan2017,
+  author    = {McMahan, Brendan and Moore, Eider and Ramage, Daniel and Hampson, Seth and {Ag\"{u}era y Arcas}, Blaise},
+  title     = {Communication-Efficient Learning of Deep Networks from Decentralized Data},
+  booktitle = {Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)},
+  pages     = {1273--1282},
+  year      = {2017},
+  publisher = {PMLR}
 }
 
-@article{amin2025,
-  author  = {Amin, Rashid and Costanzo, Andrea and Alzabin, Laith R. and others},
-  title   = {An Efficient Federated Learning Based Defense Mechanism for Software Defined Network Cyber Threats Through Machine Learning Models},
-  journal = {Scientific Reports},
-  volume  = {15},
-  pages   = {41390},
-  year    = {2025},
-  doi     = {10.1038/s41598-025-25345-1}
+@article{li2020fedprox,
+  author  = {Li, Tian and Sahu, Anit Kumar and Zaheer, Manzil and Sanjabi, Maziar and Talwalkar, Ameet and Smith, Virginia},
+  title   = {{FedProx}: Tackling Heterogeneity in Federated Networks},
+  journal = {Proceedings of Machine Learning and Systems},
+  volume  = {2},
+  pages   = {429--450},
+  year    = {2020}
+}
+
+@inproceedings{karimireddy2020scaffold,
+  author    = {Karimireddy, Sai Praneeth and Kale, Satyen and Mohri, Mehryar and Reddi, Sashank J. and Stich, Sebastian U. and Suresh, Ananda Theertha},
+  title     = {{SCAFFOLD}: Stochastic Controlled Averaging for Federated Learning},
+  booktitle = {Proceedings of the 37th International Conference on Machine Learning (ICML)},
+  pages     = {5132--5143},
+  year      = {2020},
+  publisher = {PMLR}
+}
+
+@inproceedings{acar2021feddyn,
+  author    = {Acar, Durmus Alp Emre and Zhao, Yue and Navarro, Ramon Matas and Mattina, Matthew and Whatmough, Paul N. and Tarokh, Vahid},
+  title     = {Federated Learning Based on Dynamic Regularization},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021}
+}
+
+@inproceedings{wang2020matcha,
+  author    = {Wang, Jianyu and Tantia, Vinayak and Ballas, Nicolas and Rabbat, Michael},
+  title     = {{MATCHA}: Speeding Up Decentralized {SGD} via Matching Decomposition Sampling},
+  booktitle = {Proceedings of the 2020 IEEE International Conference on Big Data},
+  pages     = {341--350},
+  year      = {2020},
+  publisher = {IEEE}
+}
+
+@article{li2020convergence,
+  author  = {Li, Xiang and Huang, Kaixuan and Yang, Wenhao and Wang, Shusen and Zhang, Zhihua},
+  title   = {On the Convergence of {FedAvg} on Non-{IID} Data},
+  journal = {International Conference on Learning Representations (ICLR)},
+  year    = {2020}
+}
+
+% ---- Differential Privacy -----------------------------------
+
+@inproceedings{dwork2006,
+  author    = {Dwork, Cynthia and McSherry, Frank and Nissim, Kobbi and Smith, Adam},
+  title     = {Calibrating Noise to Sensitivity in Private Data Analysis},
+  booktitle = {Proceedings of the Third Theory of Cryptography Conference (TCC)},
+  pages     = {265--284},
+  year      = {2006},
+  publisher = {Springer},
+  doi       = {10.1007/11681878\_14}
+}
+
+@inproceedings{abadi2016,
+  author    = {Abadi, Martin and Chu, Andy and Goodfellow, Ian and McMahon, H. Brendan and Mironov, Ilya and Talwar, Kunal and Zhang, Li},
+  title     = {Deep Learning with Differential Privacy},
+  booktitle = {Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security (CCS)},
+  pages     = {308--318},
+  year      = {2016},
+  publisher = {ACM},
+  doi       = {10.1145/2976749.2978318}
+}
+
+@inproceedings{geyer2017,
+  author    = {Geyer, Robin C. and Klein, Tassilo and Nabi, Moin},
+  title     = {Differentially Private Federated Learning: A Client Level Perspective},
+  booktitle = {Workshop on Privacy-Preserving Machine Learning (NeurIPS Workshop)},
+  year      = {2017}
+}
+
+% ---- Byzantine Robustness -----------------------------------
+
+@inproceedings{blanchard2017,
+  author    = {Blanchard, Peva and El Mhamdi, El Mahdi and Guerraoui, Rachid and Stainer, Julien},
+  title     = {Machine Learning with Adversaries: {B}yzantine Tolerant Gradient Descent},
+  booktitle = {Advances in Neural Information Processing Systems 30 (NeurIPS)},
+  pages     = {119--129},
+  year      = {2017}
+}
+
+@inproceedings{yin2018,
+  author    = {Yin, Dong and Chen, Yudong and Kannan, Ramchandran and Bartlett, Peter},
+  title     = {Byzantine-Resilient Distributed Learning: Towards Optimal Statistical Rates},
+  booktitle = {Proceedings of the 35th International Conference on Machine Learning (ICML)},
+  pages     = {5650--5659},
+  year      = {2018},
+  publisher = {PMLR}
+}
+
+@inproceedings{bonawitz2017,
+  author    = {Bonawitz, Keith and Ivanov, Vladimir and Kreuter, Ben and Marcedone, Antonio and McMahan, H. Brendan and Patel, Sarvar and Ramage, Daniel and Segal, Aaron and Seth, Karn},
+  title     = {Practical Secure Aggregation for Privacy-Preserving Machine Learning},
+  booktitle = {Proceedings of the 2017 ACM SIGSAC Conference on Computer and Communications Security (CCS)},
+  pages     = {1175--1191},
+  year      = {2017},
+  publisher = {ACM},
+  doi       = {10.1145/3133956.3133982}
+}
+
+@inproceedings{bagdasaryan2020,
+  author    = {Bagdasaryan, Eugene and Veit, Andreas and Hua, Yiqing and Estrin, Deborah and Shmatikov, Vitaly},
+  title     = {How to Back Door Federated Learning},
+  booktitle = {Proceedings of the 23rd International Conference on Artificial Intelligence and Statistics (AISTATS)},
+  pages     = {2938--2948},
+  year      = {2020},
+  publisher = {PMLR}
+}
+
+% ---- Privacy Surveys & Open Problems ------------------------
+
+@article{kairouz2021,
+  author    = {Kairouz, Peter and McMahan, H. Brendan and Avent, Brendan and others},
+  title     = {Advances and Open Problems in Federated Learning},
+  journal   = {Foundations and Trends in Machine Learning},
+  volume    = {14},
+  number    = {1--2},
+  pages     = {1--210},
+  year      = {2021},
+  doi       = {10.1561/2200000083}
+}
+
+% ---- Gradient Leakage & Model Inversion --------------------
+
+@inproceedings{zhu2019,
+  author    = {Zhu, Ligeng and Liu, Zhijian and Han, Song},
+  title     = {Deep Leakage from Gradients},
+  booktitle = {Advances in Neural Information Processing Systems 32 (NeurIPS)},
+  pages     = {14774--14784},
+  year      = {2019}
+}
+
+@inproceedings{geiping2020,
+  author    = {Geiping, Jonas and Bauermeister, Hartmut and Dr{\"{o}}ge, Hannah and Moeller, Michael},
+  title     = {Inverting Gradients --- How Easy Is It to Break Privacy in Federated Learning?},
+  booktitle = {Advances in Neural Information Processing Systems 33 (NeurIPS)},
+  pages     = {16937--16947},
+  year      = {2020}
+}
+
+% ---- FL for IDS / CTI ---------------------------------------
+
+@article{mothukuri2021,
+  author  = {Mothukuri, Viraaji and Parizi, Reza M. and Pouriyeh, Seyedamin and Huang, Yan and Dehghantanha, Ali and Srivastava, Gautam},
+  title   = {A Survey on Security and Privacy of Federated Learning},
+  journal = {Future Generation Computer Systems},
+  volume  = {115},
+  pages   = {619--640},
+  year    = {2021},
+  doi     = {10.1016/j.future.2020.10.007}
 }
 
 @article{buyuktanir2025,
@@ -27,27 +174,6 @@
   pages   = {473},
   year    = {2025},
   doi     = {10.1007/s10586-025-05325-w}
-}
-
-@article{jianping2024,
-  author  = {Jianping, Wu and Guangqiu, Qiu and Chunming, Wu and others},
-  title   = {Federated Learning for Network Attack Detection Using Attention-Based Graph Neural Networks},
-  journal = {Scientific Reports},
-  volume  = {14},
-  pages   = {19088},
-  year    = {2024},
-  doi     = {10.1038/s41598-024-70032-2}
-}
-
-@article{ragab2025,
-  author  = {Ragab, Mahmoud and Ashary, Ehab Bahaudien and Alghamdi, Bandar M. and Aboalela, Ranya and Alsaadi, Naif and Maghrabi, Louai A. and Allehaibi, Khalid H.},
-  title   = {Advanced Artificial Intelligence with Federated Learning Framework for Privacy-Preserving Cyberthreat Detection in {IoT}-Assisted Sustainable Smart Cities},
-  journal = {Scientific Reports},
-  volume  = {15},
-  number  = {1},
-  pages   = {4470},
-  year    = {2025},
-  doi     = {10.1038/s41598-025-88843-2}
 }
 
 @article{timofte2025,
@@ -72,76 +198,45 @@
   doi     = {10.3390/fi17090409}
 }
 
-@inproceedings{mcmahan2017,
-  author    = {McMahan, Brendan and Moore, Eider and Ramage, Daniel and Hampson, Seth and Arcas, Blaise Ag\"{u}era y},
-  title     = {Communication-Efficient Learning of Deep Networks from Decentralized Data},
-  booktitle = {Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)},
-  pages     = {1273--1282},
-  year      = {2017},
-  publisher = {PMLR}
+@article{ragab2025,
+  author  = {Ragab, Mahmoud and Ashary, Ehab Bahaudien and Alghamdi, Bandar M. and Aboalela, Ranya and Alsaadi, Naif and Maghrabi, Louai A. and Allehaibi, Khalid H.},
+  title   = {Advanced Artificial Intelligence with Federated Learning Framework for Privacy-Preserving Cyberthreat Detection in {IoT}-Assisted Sustainable Smart Cities},
+  journal = {Scientific Reports},
+  volume  = {15},
+  number  = {1},
+  pages   = {4470},
+  year    = {2025},
+  doi     = {10.1038/s41598-025-88843-2}
 }
 
-@inproceedings{abadi2016,
-  author    = {Abadi, Martin and Chu, Andy and Goodfellow, Ian and McMahon, H. Brendan and Mironov, Ilya and Talwar, Kunal and Zhang, Li},
-  title     = {Deep Learning with Differential Privacy},
-  booktitle = {Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security (CCS)},
-  pages     = {308--318},
-  year      = {2016},
-  publisher = {ACM},
-  doi       = {10.1145/2976749.2978318}
+@article{jianping2024,
+  author  = {Jianping, Wu and Guangqiu, Qiu and Chunming, Wu and others},
+  title   = {Federated Learning for Network Attack Detection Using Attention-Based Graph Neural Networks},
+  journal = {Scientific Reports},
+  volume  = {14},
+  pages   = {19088},
+  year    = {2024},
+  doi     = {10.1038/s41598-024-70032-2}
 }
 
-@inproceedings{dwork2006,
-  author    = {Dwork, Cynthia and McSherry, Frank and Nissim, Kobbi and Smith, Adam},
-  title     = {Calibrating Noise to Sensitivity in Private Data Analysis},
-  booktitle = {Proceedings of the Third Theory of Cryptography Conference (TCC)},
-  pages     = {265--284},
-  year      = {2006},
-  publisher = {Springer},
-  doi       = {10.1007/11681878\_14}
+@article{abdelaziz2025,
+  author  = {Abd Elaziz, Mohamed and Fares, Ibrahim A. and Dahou, Abdelghani and Shrahili, Mansour},
+  title   = {Federated Learning Framework for {IoT} Intrusion Detection Using Tab Transformer and Nature-Inspired Hyperparameter Optimization},
+  journal = {Frontiers in Big Data},
+  volume  = {8},
+  pages   = {1526480},
+  year    = {2025},
+  doi     = {10.3389/fdata.2025.1526480}
 }
 
-@inproceedings{blanchard2017,
-  author    = {Blanchard, Peva and El Mhamdi, El Mahdi and Guerraoui, Rachid and Stainer, Julien},
-  title     = {Machine Learning with Adversaries: {B}yzantine Tolerant Gradient Descent},
-  booktitle = {Advances in Neural Information Processing Systems 30 (NeurIPS)},
-  pages     = {119--129},
-  year      = {2017}
-}
-
-@inproceedings{bonawitz2017,
-  author    = {Bonawitz, Keith and Ivanov, Vladimir and Kreuter, Ben and Marcedone, Antonio and McMahan, H. Brendan and Patel, Sarvar and Ramage, Daniel and Segal, Aaron and Seth, Karn},
-  title     = {Practical Secure Aggregation for Privacy-Preserving Machine Learning},
-  booktitle = {Proceedings of the 2017 ACM SIGSAC Conference on Computer and Communications Security (CCS)},
-  pages     = {1175--1191},
-  year      = {2017},
-  publisher = {ACM},
-  doi       = {10.1145/3133956.3133982}
-}
-
-@techreport{barnum2012,
-  author      = {Barnum, Sean},
-  title       = {Standardizing Cyber Threat Intelligence Information with the {S}tructured {T}hreat {I}nformation e{X}pression ({STIX})},
-  institution = {MITRE Corporation},
-  year        = {2012}
-}
-
-@inproceedings{yin2018,
-  author    = {Yin, Dong and Chen, Yudong and Kannan, Ramchandran and Bartlett, Peter},
-  title     = {Byzantine-Resilient Distributed Learning: Towards Optimal Statistical Rates},
-  booktitle = {Proceedings of the 35th International Conference on Machine Learning (ICML)},
-  pages     = {5650--5659},
-  year      = {2018},
-  publisher = {PMLR}
-}
-
-@inproceedings{bagdasaryan2020,
-  author    = {Bagdasaryan, Eugene and Veit, Andreas and Hua, Yiqing and Estrin, Deborah and Shmatikov, Vitaly},
-  title     = {How to Back Door Federated Learning},
-  booktitle = {Proceedings of the 23rd International Conference on Artificial Intelligence and Statistics (AISTATS)},
-  pages     = {2938--2948},
-  year      = {2020},
-  publisher = {PMLR}
+@article{amin2025,
+  author  = {Amin, Rashid and Costanzo, Andrea and Alzabin, Laith R. and others},
+  title   = {An Efficient Federated Learning Based Defense Mechanism for Software Defined Network Cyber Threats Through Machine Learning Models},
+  journal = {Scientific Reports},
+  volume  = {15},
+  pages   = {41390},
+  year    = {2025},
+  doi     = {10.1038/s41598-025-25345-1}
 }
 
 @article{nguyen2021,
@@ -155,21 +250,59 @@
   doi     = {10.1109/COMST.2021.3075439}
 }
 
-@inproceedings{zhu2019,
-  author    = {Zhu, Ligeng and Liu, Zhijian and Han, Song},
-  title     = {Deep Leakage from Gradients},
-  booktitle = {Advances in Neural Information Processing Systems 32 (NeurIPS)},
-  pages     = {14774--14784},
-  year      = {2019}
+% ---- Threat Intelligence Standards -------------------------
+
+@techreport{barnum2012,
+  author      = {Barnum, Sean},
+  title       = {Standardizing Cyber Threat Intelligence Information with the {S}tructured {T}hreat {I}nformation e{X}pression ({STIX})},
+  institution = {MITRE Corporation},
+  year        = {2012}
 }
 
-@article{kairouz2021,
-  author    = {Kairouz, Peter and McMahan, H. Brendan and Avent, Brendan and others},
-  title     = {Advances and Open Problems in Federated Learning},
-  journal   = {Foundations and Trends in Machine Learning},
-  volume    = {14},
-  number    = {1--2},
-  pages     = {1--210},
-  year      = {2021},
-  doi       = {10.1561/2200000083}
+% ---- Datasets -----------------------------------------------
+
+@inproceedings{moustafa2015,
+  author    = {Moustafa, Nour and Slay, Jill},
+  title     = {{UNSW-NB15}: A Comprehensive Data Set for Network Intrusion Detection Systems},
+  booktitle = {Proceedings of the 2015 Military Communications and Information Systems Conference (MilCIS)},
+  pages     = {1--6},
+  year      = {2015},
+  publisher = {IEEE},
+  doi       = {10.1109/MilCIS.2015.7348942}
+}
+
+@article{sharafaldin2018,
+  author  = {Sharafaldin, Iman and Lashkari, Arash Habibi and Ghorbani, Ali A.},
+  title   = {Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization},
+  journal = {Proceedings of the 4th International Conference on Information Systems Security and Privacy (ICISSP)},
+  pages   = {108--116},
+  year    = {2018},
+  doi     = {10.5220/0006639801080116}
+}
+
+@article{tavallaee2009,
+  author  = {Tavallaee, Mahbod and Bagheri, Ebrahim and Lu, Wei and Ghorbani, Ali A.},
+  title   = {A Detailed Analysis of the {KDD CUP 99} Data Set},
+  journal = {Proceedings of the 2009 IEEE Symposium on Computational Intelligence for Security and Defense Applications (CISDA)},
+  pages   = {1--6},
+  year    = {2009},
+  doi     = {10.1109/CISDA.2009.5356528}
+}
+
+% ---- Regulation & Ethics ------------------------------------
+
+@misc{gdpr2016,
+  author       = {{European Parliament and Council}},
+  title        = {Regulation ({EU}) 2016/679 of the {E}uropean {P}arliament and of the {C}ouncil (General Data Protection Regulation)},
+  howpublished = {Official Journal of the European Union},
+  year         = {2016},
+  note         = {OJ L 119, 4.5.2016, pp. 1--88}
+}
+
+@misc{euaiact2024,
+  author       = {{European Parliament and Council}},
+  title        = {Regulation ({EU}) 2024/1689 Laying Down Harmonised Rules on Artificial Intelligence ({EU} {AI} Act)},
+  howpublished = {Official Journal of the European Union},
+  year         = {2024},
+  note         = {OJ L, 2024/1689, 12.7.2024}
 }

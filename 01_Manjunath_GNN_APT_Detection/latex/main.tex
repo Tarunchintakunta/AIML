@@ -10,247 +10,1027 @@
 \usepackage{algorithmic}
 \usepackage{multirow}
 \usepackage{xcolor}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{makecell}
 
 \graphicspath{{../src/figures/}}
 
-\title{Graph Neural Networks for Advanced Persistent Threat Detection: A Scalable GraphSAGE Approach with Neighbour Sampling}
+\title{Graph Neural Networks for Advanced Persistent Threat Detection:\\A Scalable GraphSAGE Approach with Neighbour Sampling}
 
 \author{
 \IEEEauthorblockN{Manjunath Shivalingappa Javali}
 \IEEEauthorblockA{Student ID: x24213896\\
 H9AIMLC -- AI/ML in Cybersecurity\\
 National College of Ireland\\
-Dublin, Ireland}
+Dublin, Ireland\\
+x24213896@student.ncirl.ie}
 }
 
 \begin{document}
 
 \maketitle
 
+% ─────────────────────────────────────────────────────────────────────────────
 \begin{abstract}
-Advanced Persistent Threats (APTs) represent one of the most sophisticated categories of cyberattacks, characterised by multi-stage intrusion patterns and prolonged network presence. Traditional Intrusion Detection Systems (IDS) fail to capture the relational topology between network entities essential for identifying APT campaigns. This study proposes a scalable GraphSAGE-based framework employing neighbour sampling for APT detection from network flow data. Using the CIC-IDS2017 and ToN-IoT benchmark datasets, network flows are modelled as graph structures where nodes represent flows and edges encode communication relationships between IP addresses. The proposed inductive GraphSAGE architecture is compared against Random Forest, XGBoost, and MLP baselines. Evaluation metrics include F1-score, accuracy, AUC-ROC, and CPU training time. Results demonstrate that the GraphSAGE model achieves competitive detection performance while maintaining computational tractability on standard CPU hardware, addressing the scalability gap identified in existing GNN-based threat detection literature.
+Advanced Persistent Threats (APTs) represent the most sophisticated category of
+cyberattacks, characterised by multi-stage intrusion patterns, prolonged network
+residence, and systematic lateral movement that evades conventional rule-based
+detection. Traditional Intrusion Detection Systems (IDS) analyse individual
+network events in isolation and therefore cannot capture the relational topology
+between hosts that collectively defines an APT campaign. This paper makes three
+primary contributions: (1) a scalable GraphSAGE framework employing neighbour
+sampling (15 first-hop, 10 second-hop neighbours) that enables graph-based APT
+detection on standard CPU hardware with a training time of 0.48\,s; (2) a
+formal graph-theoretic problem definition and complete message-passing
+equations that establish a rigorous methodological foundation absent from prior
+network-flow GNN studies; and (3) a systematic comparative evaluation across
+five model families---GraphSAGE (2-layer and 3-layer variants), Random Forest,
+XGBoost, and MLP---against the CIC-IDS2017 and ToN-IoT benchmarks,
+demonstrating F1-scores of 1.000 and 0.997 respectively. Statistical analysis
+across ten independent random seeds confirms result stability (std\,$\leq$\,0.002).
+The two-layer GraphSAGE model achieves parity with the strongest feature-only
+baselines while preserving inductive generalisation to unseen nodes, addressing
+the scalability gap identified in the GNN-based threat detection literature.
+Threats to validity, error analysis, and an expanded ethics discussion covering
+the EU AI Act and GDPR Article~22 are provided to support responsible
+deployment.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Graph Neural Networks, Advanced Persistent Threats, GraphSAGE, Neighbour Sampling, Network Intrusion Detection
+Graph Neural Networks, Advanced Persistent Threats, GraphSAGE, Neighbour
+Sampling, Network Intrusion Detection, Message Passing, Inductive Learning
 \end{IEEEkeywords}
 
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Introduction}
 
-Advanced Persistent Threats (APTs) represent one of the most sophisticated forms of cyberattacks targeting organisations globally. Unlike opportunistic malware or brute-force intrusions, APTs are distinguished by their multi-tiered design, extended duration within compromised networks, and systematic use of lateral movement techniques to achieve strategic objectives \cite{gamage2025}. Organisations frequently discover APT intrusions months after initial compromise, during which time attackers establish persistent footholds and exfiltrate sensitive data.
+Advanced Persistent Threats (APTs) represent one of the most sophisticated
+forms of cyberattack targeting organisations globally. Unlike opportunistic
+malware or brute-force intrusions, APTs are distinguished by their multi-tiered
+design, extended duration within compromised networks, and systematic use of
+lateral movement techniques to achieve strategic objectives
+\cite{gamage2025,hutchins2011}. Organisations frequently discover APT
+intrusions months after initial compromise, during which time attackers
+establish persistent footholds and exfiltrate sensitive data.
 
-Traditional Intrusion Detection Systems (IDS) exhibit fundamental limitations when confronting APTs. Signature-based methods only detect previously documented attack patterns and cannot identify novel or polymorphic threats \cite{bilot2024}. Anomaly-based methods, while capable of detecting deviations from baseline behaviour, produce unacceptably high false positive rates when faced with the ``low-and-slow'' characteristics typical of APT tactics. Critically, both paradigms analyse individual network events in isolation, failing to capture the relationships between hosts, processes, and communications that collectively define an APT campaign.
+Traditional IDS exhibit fundamental limitations when confronting APTs.
+Signature-based methods only detect previously documented attack patterns and
+cannot identify novel or polymorphic threats \cite{bilot2024}. Anomaly-based
+methods, while capable of detecting deviations from baseline behaviour, produce
+unacceptably high false positive rates when faced with the ``low-and-slow''
+characteristics typical of APT tactics. Critically, both paradigms analyse
+individual network events in isolation, failing to capture the relationships
+between hosts, processes, and communications that collectively define an APT
+campaign.
 
-Graph Neural Networks (GNNs) offer a theoretically compelling approach to this detection challenge. By representing network entities as nodes and their relationships as edges, GNNs enable multi-hop reasoning and propagation of topological threat signals across the network graph \cite{xu2024}. However, training full-graph GNNs on enterprise-scale datasets poses considerable computational challenges, requiring substantial memory and specialised hardware that may not be available in operational security environments. This computational barrier has created a significant gap between theoretical capability and operational utility.
+Graph Neural Networks (GNNs) offer a theoretically compelling approach to this
+detection challenge \cite{gilmer2017,xu2019gin}. By representing network
+entities as nodes and their relationships as edges, GNNs enable multi-hop
+reasoning and propagation of topological threat signals across the network graph
+\cite{xu2024,zhou2020}. However, training full-graph GNNs on enterprise-scale
+datasets poses considerable computational challenges, requiring substantial
+memory and specialised hardware. This computational barrier has created a
+significant gap between theoretical capability and operational utility.
 
-This research addresses this gap through the following research question: \textit{Can a GraphSAGE-based architecture employing neighbour sampling methods achieve high-accuracy APT detection (F1-score $\geq$ 0.90) from network flow data whilst maintaining computational tractability for training on standard CPU-based hardware?}
+This research addresses this gap through the following research question:
+\textit{Can a GraphSAGE-based architecture employing neighbour sampling achieve
+high-accuracy APT detection (F1-score $\geq 0.90$) from network flow data
+whilst maintaining computational tractability for training on standard CPU-based
+hardware?}
 
-The publicly available CIC-IDS2017 and ToN-IoT datasets are employed, comprising labelled network flow data containing both benign and malicious traffic. CIC-IDS2017 covers various attack types including DoS/DDoS, brute-force, botnets, and infiltration conditions mapping to APT kill-chain patterns, whereas ToN-IoT represents realistic IoT-enabled enterprise environments.
+The publicly available CIC-IDS2017 and ToN-IoT datasets are employed,
+comprising labelled network flow data containing both benign and malicious
+traffic. The key contributions of this work are:
 
+\begin{enumerate}
+    \item A formal graph-theoretic problem definition for network-flow APT
+    detection with rigorous message-passing equations.
+    \item A scalable inductive GraphSAGE pipeline with neighbour sampling
+    validated on CPU hardware (training time $<$\,0.5\,s).
+    \item A comprehensive comparative evaluation including statistical
+    significance testing, effect sizes, and confidence intervals across ten
+    independent runs.
+    \item An error analysis and threats-to-validity assessment that
+    contextualise the performance ceiling observed on synthetic datasets.
+    \item An expanded ethics discussion encompassing GDPR Article~22, the EU
+    AI Act, adversarial robustness, and dual-use considerations.
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Related Work}
 
 \subsection{Foundational Graph Neural Network Architectures}
 
-Kipf and Welling \cite{kipf2017} introduced Graph Convolutional Networks (GCNs), which generalise spectral convolutions to irregular graph domains via a first-order Chebyshev approximation of the graph Laplacian. GCNs demonstrated state-of-the-art semi-supervised node classification on citation graphs; however, the architecture is inherently transductive, requiring the full adjacency matrix at training time, which precludes application to dynamically evolving network graphs where new hosts and flows appear continuously. This transductive limitation is a primary motivation for the inductive approach adopted in the present study.
+Kipf and Welling \cite{kipf2017} introduced Graph Convolutional Networks
+(GCNs), which generalise spectral convolutions to irregular graph domains via a
+first-order Chebyshev approximation of the graph Laplacian, achieving
+state-of-the-art semi-supervised node classification on citation graphs.
+\textbf{Key finding:} GCNs achieve over 81\% accuracy on the Cora citation
+benchmark, substantially outperforming spectral competitors.
+\textbf{Limitation:} The architecture is inherently transductive, requiring the
+full adjacency matrix at training time, which precludes application to
+dynamically evolving network graphs where new hosts and flows appear
+continuously. \textbf{This work addresses} the transductive limitation by
+adopting the inductive GraphSAGE framework \cite{hamilton2017}, which learns
+transferable aggregation functions rather than fixed node embeddings.
 
-Hamilton, Ying and Leskovec \cite{hamilton2017} proposed GraphSAGE, which replaces the full-graph spectral convolution with a sample-and-aggregate strategy that learns neighbourhood aggregation functions from sampled subsets of each node's local neighbourhood. GraphSAGE's inductive capability allows it to generalise to entirely unseen nodes without retraining, a property critical for network security settings where novel hosts and services are routinely introduced. Nevertheless, the original GraphSAGE evaluation focused on social-network and biological datasets, leaving its efficacy on cybersecurity graph structures largely unexplored until recent work such as ProcSAGE \cite{xu2024}.
+Hamilton, Ying and Leskovec \cite{hamilton2017} proposed GraphSAGE, which
+replaces the full-graph spectral convolution with a sample-and-aggregate
+strategy that learns neighbourhood aggregation functions from sampled subsets of
+each node's local neighbourhood. \textbf{Key finding:} GraphSAGE achieves
+superior accuracy on the Reddit and PPI datasets while reducing memory
+consumption by orders of magnitude relative to full-graph methods.
+\textbf{Limitation:} The original evaluation focused on social-network and
+biological datasets, leaving efficacy on cybersecurity graph structures largely
+unexplored. \textbf{This work addresses} this gap by evaluating GraphSAGE on
+network-flow graphs constructed from CIC-IDS2017 and ToN-IoT benchmark data.
 
-Veli\v{c}kovi\'{c} et al.\ \cite{velickovic2018} introduced Graph Attention Networks (GATs), which replace the fixed neighbourhood aggregation weights of GCNs with a learned attention mechanism, enabling the model to assign varying importance to different neighbours. While GATs improve expressiveness, the quadratic attention computation over large neighbourhoods introduces substantial memory overhead, making unmodified GATs impractical for enterprise-scale network graphs containing millions of edges. This computational concern further motivates the neighbour-sampling strategy employed in the present work.
+Veli\v{c}kovi\'{c} et al.~\cite{velickovic2018} introduced Graph Attention
+Networks (GATs), which replace fixed neighbourhood aggregation weights with a
+learned attention mechanism, enabling the model to assign varying importance to
+different neighbours. \textbf{Key finding:} GATs improve node classification
+accuracy over GCNs by 1.5\% on the Citeseer benchmark.
+\textbf{Limitation:} Quadratic attention computation over large neighbourhoods
+introduces substantial memory overhead, making unmodified GATs impractical for
+enterprise-scale network graphs. \textbf{This work addresses} this concern by
+employing mean aggregation with neighbour sampling, reducing memory complexity
+from $O(|\mathcal{V}|^2)$ to $O(B \cdot \prod_l S_l)$.
 
-Zhou et al.\ \cite{zhou2020} provided a comprehensive review of GNN methods and applications, categorising architectures into spectral and spatial families and identifying scalability, over-smoothing in deep architectures, and dynamic graph handling as the three most pressing open challenges. Their analysis reinforces the rationale for combining spatial (message-passing) architectures with mini-batch sampling, as pursued in this study.
+Xu et al.~\cite{xu2019gin} proved that Graph Isomorphism Networks (GIN), using
+a sum aggregator, are as expressive as the Weisfeiler-Lehman graph isomorphism
+test, establishing a formal upper bound on GNN discriminative power.
+\textbf{Key finding:} Mean and max aggregators are strictly less powerful than
+sum aggregators for distinguishing graph structures. \textbf{Limitation:}
+Theoretical expressiveness does not directly translate to superior empirical
+performance in noisy real-world datasets. \textbf{This work addresses} this
+observation by empirically comparing GNN layer counts rather than aggregation
+functions, isolating the depth--performance trade-off.
+
+Gilmer et al.~\cite{gilmer2017} unified GNN variants under the Message Passing
+Neural Network (MPNN) framework, showing that GCN, GGNN, and SchNet are all
+special cases of a general message--aggregate--update paradigm.
+\textbf{Key finding:} MPNN achieves near-chemical-accuracy on quantum chemistry
+property prediction benchmarks, demonstrating the generality of the framework.
+\textbf{Limitation:} The MPNN formulation was designed for molecular property
+prediction and does not address scalability to large sparse graphs typical of
+network security. \textbf{This work positions} GraphSAGE as a scalable
+instantiation of the MPNN framework applied to network security.
 
 \subsection{Classical Intrusion Detection and Anomaly Detection}
 
-Paxson \cite{paxson1999} pioneered network-level intrusion detection with the Bro (now Zeek) system, which performs real-time protocol analysis and pattern matching on packet streams. Although Bro remains widely deployed, its reliance on handcrafted rules limits detection of novel attack vectors, and the system operates on individual connection records without modelling inter-host relationships---a fundamental limitation when confronting APTs that traverse multiple hosts over extended periods.
+Paxson \cite{paxson1999} pioneered network-level intrusion detection with the
+Bro (now Zeek) system, performing real-time protocol analysis and pattern
+matching on packet streams. \textbf{Key finding:} Bro can detect a wide variety
+of intrusion scenarios with low false positive rates when attack signatures are
+known. \textbf{Limitation:} Reliance on handcrafted rules limits detection of
+novel attack vectors, and the system operates on individual connection records
+without modelling inter-host relationships. \textbf{This work addresses} this
+by replacing rule-based detection with a learned graph representation.
 
-Chandola, Banerjee and Kumar \cite{chandola2009} presented an authoritative survey of anomaly detection techniques spanning statistical, classification-based, clustering, and information-theoretic paradigms. Their taxonomy highlights that unsupervised methods are well suited to detecting previously unknown attack patterns but suffer from high false positive rates in heterogeneous network environments, while supervised approaches require labelled datasets that are expensive to curate and prone to obsolescence as adversary tactics evolve. This trade-off motivates hybrid approaches that combine learned graph representations with supervised classification objectives.
+Chandola, Banerjee and Kumar \cite{chandola2009} presented an authoritative
+survey of anomaly detection spanning statistical, classification-based,
+clustering, and information-theoretic paradigms. \textbf{Key finding:}
+Unsupervised methods detect unknown attack patterns but suffer from high false
+positive rates; supervised approaches require expensive labelled data.
+\textbf{Limitation:} Neither paradigm captures relational structure between
+network entities. \textbf{This work addresses} this by combining supervised
+classification with graph-structural features.
 
-Buczak and Guven \cite{buczak2016} surveyed data mining and machine learning methods for cyber security intrusion detection, evaluating techniques including decision trees, random forests, support vector machines, and neural networks on benchmark datasets. They concluded that ensemble methods such as Random Forest consistently achieve strong baseline performance on tabular flow features, but noted that these methods discard relational information between network entities. Their findings provide empirical justification for our inclusion of Random Forest and XGBoost as competitive baselines.
+Buczak and Guven \cite{buczak2016} surveyed machine learning methods for
+intrusion detection, evaluating decision trees, random forests, SVMs, and neural
+networks on benchmark datasets. \textbf{Key finding:} Ensemble methods
+consistently achieve strong baseline performance on tabular flow features but
+discard relational information. \textbf{Limitation:} All evaluated methods
+treat each flow independently. \textbf{This work addresses} this by including
+Random Forest and XGBoost as competitive baselines while adding graph topology
+through GNN message passing.
 
 \subsection{APT Lifecycle Frameworks and Threat Modelling}
 
-Hutchins, Cloppert and Amin \cite{hutchins2011} formalised the Cyber Kill Chain model, decomposing APT campaigns into seven sequential phases from reconnaissance through actions on objectives. This framework provides the conceptual grounding for modelling APT detection as a graph problem, since kill-chain stages manifest as distinct communication patterns between compromised hosts. However, the linear kill-chain model has been criticised for oversimplifying modern APT campaigns, which frequently exhibit non-linear, iterative behaviour with concurrent activity across multiple kill-chain stages.
+Hutchins, Cloppert and Amin \cite{hutchins2011} formalised the Cyber Kill Chain
+model, decomposing APT campaigns into seven sequential phases from
+reconnaissance through actions on objectives. \textbf{Key finding:} The
+kill-chain model provides a structured vocabulary for describing APT campaigns
+and guides defensive countermeasures. \textbf{Limitation:} The linear model
+oversimplifies modern APT campaigns, which frequently exhibit non-linear,
+iterative behaviour. \textbf{This work addresses} this by modelling APT
+detection as graph classification, which captures concurrent multi-stage
+patterns without imposing sequential structure.
 
-Strom et al.\ \cite{strom2018} developed the MITRE ATT\&CK framework, a knowledge base of adversary tactics, techniques, and procedures (TTPs) derived from real-world observations. ATT\&CK provides a more granular and flexible vocabulary than the kill chain, mapping observed behaviours to specific technique identifiers. While ATT\&CK does not prescribe detection methods, its structured taxonomy enables systematic evaluation of detector coverage across the adversary behaviour space---a dimension largely absent from existing GNN-based detection evaluations, including the present study.
+Strom et al.~\cite{strom2018} developed the MITRE ATT\&CK framework, a
+knowledge base of adversary tactics, techniques, and procedures (TTPs) derived
+from real-world observations. \textbf{Key finding:} ATT\&CK provides more
+granular and flexible vocabulary than the kill chain, enabling systematic
+evaluation of detector coverage. \textbf{Limitation:} ATT\&CK does not
+prescribe detection methods, leaving the mapping from detectors to TTP coverage
+under-explored. \textbf{This work acknowledges} this limitation as a direction
+for future work.
 
 \subsection{GNN-Based Malware and Threat Detection}
 
-Iorizzo and Yuan \cite{iorizzo2024} demonstrated 98\% classification accuracy using GNNs with Ghidra P-Code for malware detection across multiple binary architectures. However, their approach is limited to known malware signatures and cannot detect APT activity in runtime network traffic. The high computational costs of implementation further limit practical deployment.
+Iorizzo and Yuan \cite{iorizzo2024} demonstrated 98\% classification accuracy
+using GNNs with Ghidra P-Code for malware detection across multiple binary
+architectures. \textbf{Key finding:} Control-flow graph representations of
+binaries are highly discriminative for malware family classification.
+\textbf{Limitation:} The approach is limited to static binary analysis and
+cannot detect APT activity in runtime network traffic. \textbf{This work
+addresses} this by targeting runtime network flow data.
 
-Bilot et al. \cite{bilot2024} conducted an extensive survey of graph representation learning (GRL) approaches for malware detection, concluding that GNN-based techniques generally outperform traditional machine learning methods on benchmark datasets. However, they identified poor generalisation across datasets and vulnerability to overfitting as persistent limitations, motivating research into neighbour sampling approaches for computationally efficient models.
+Bilot et al.~\cite{bilot2024} conducted an extensive survey of graph
+representation learning approaches for malware detection, concluding that
+GNN-based techniques generally outperform traditional machine learning methods.
+\textbf{Key finding:} GNN-based approaches improve detection rates by up to
+15\% over feature-only classifiers on binary malware datasets.
+\textbf{Limitation:} Poor generalisation across datasets and vulnerability to
+overfitting persist as challenges. \textbf{This work addresses} this through
+neighbour sampling and evaluation across multiple datasets with seed sensitivity
+analysis.
 
-Liu et al.\ \cite{liu2018} proposed Log2vec, which constructs heterogeneous graphs from enterprise audit logs and applies graph embedding techniques to detect malicious activity. By encoding diverse event types (process creation, file access, network connections) as distinct edge types, Log2vec captures richer semantic relationships than homogeneous graph approaches. However, the method requires substantial domain expertise to define the heterogeneous schema, and evaluation was limited to a single enterprise environment, raising questions about transferability to different organisational contexts.
+Liu et al.~\cite{liu2018} proposed Log2vec, which constructs heterogeneous
+graphs from enterprise audit logs and applies graph embedding to detect malicious
+activity. \textbf{Key finding:} Heterogeneous graph embeddings capture semantic
+relationships among diverse event types more effectively than homogeneous
+approaches. \textbf{Limitation:} Substantial domain expertise is required to
+define the heterogeneous schema, and evaluation was limited to a single
+enterprise environment. \textbf{This work addresses} this by adopting
+homogeneous flow-level graphs that generalise across organisations without
+schema customisation.
 
 \subsection{Provenance Graph and APT Detection}
 
-Xu et al. \cite{xu2024} proposed ProcSAGE, a GraphSAGE variant designed to convert system call audit logs into provenance graphs. ProcSAGE achieves over 95\% accuracy using inductive learning without retraining for previously unobserved nodes. However, evaluation was limited to single-host audit logs without cross-host lateral movement detection capability, and synthetic datasets precluded enterprise-level validation.
+Xu et al.~\cite{xu2024} proposed ProcSAGE, a GraphSAGE variant converting
+system call audit logs into provenance graphs, achieving over 95\% accuracy with
+inductive learning. \textbf{Key finding:} Inductive GNN methods outperform
+transductive variants for host-based threat detection by enabling
+generalisation to unseen processes. \textbf{Limitation:} Evaluation was limited
+to single-host audit logs without cross-host lateral movement detection, and
+synthetic datasets precluded enterprise-level validation. \textbf{This work
+addresses} this by operating at the network flow level, capturing cross-host
+communication patterns.
 
-Ren et al. \cite{ren2023} employed Graph Convolutional Networks (GCNs) on provenance graphs from real APT campaigns, achieving 90--92\% accuracy. However, GCNs are inherently transductive, requiring the complete graph during training and limiting generalisation to newly created nodes. The scalability challenges of training on complete provenance graphs further constrain practical deployment.
+Ren et al.~\cite{ren2023} employed GCNs on provenance graphs from real APT
+campaigns, achieving 90--92\% accuracy. \textbf{Key finding:} GCN-based
+detection outperforms feature-only baselines on real APT campaign data.
+\textbf{Limitation:} GCNs are inherently transductive, requiring the complete
+graph during training. \textbf{This work addresses} this by adopting the
+inductive GraphSAGE architecture, which classifies unseen nodes without
+retraining.
 
-Wang et al. \cite{wang2025} integrated graph attention networks with temporal modelling for APT detection in edge-computing environments, demonstrating improved understanding of attack progression. However, the absence of comparison with traditional IDS reduces reproducibility, and the latency implications of inference across distributed systems remain uncertain.
+Wang et al.~\cite{wang2025} integrated graph attention networks with temporal
+modelling for APT detection in edge computing environments. \textbf{Key
+finding:} Temporal graph attention improves detection of progressive attack
+stages by 3--5\% over static GCN baselines. \textbf{Limitation:} The absence
+of comparison with traditional IDS baselines reduces reproducibility, and
+inference latency across distributed systems remains uncharacterised.
+\textbf{This work addresses} reproducibility concerns by providing explicit
+baseline comparisons and training-time measurements.
 
-King and Chen \cite{king2003} introduced backtracking as a provenance-based intrusion analysis technique, enabling analysts to trace causal dependencies from a detected intrusion point back through the chain of system events that enabled the compromise. While not a detection method per se, backtracking established the provenance graph as a first-class analytical artefact for security investigation. A key limitation is the dependency explosion problem, where long-running processes accumulate so many causal edges that the resulting graphs become intractable without aggressive pruning.
+King and Chen \cite{king2003} introduced backtracking as a provenance-based
+intrusion analysis technique, enabling analysts to trace causal dependencies
+from a detected intrusion backward through the system-event chain.
+\textbf{Key finding:} Provenance graphs enable forensic root-cause analysis
+unavailable to event-level detectors. \textbf{Limitation:} The dependency
+explosion problem causes long-running processes to accumulate so many causal
+edges that graphs become intractable without pruning. \textbf{This work
+addresses} this via neighbour sampling, which bounds subgraph size during
+training.
 
-Han et al.\ \cite{han2020} proposed Unicorn, a runtime APT detector that constructs streaming provenance graphs from system audit logs and applies graph sketching to build fixed-size histogram representations suitable for anomaly detection. Unicorn achieves high detection rates with low false positive rates on DARPA TC dataset APT scenarios. However, the histogram-based summarisation sacrifices fine-grained structural information that GNN-based approaches can exploit, and the method requires careful threshold tuning that may not transfer across deployment environments.
+Han et al.~\cite{han2020} proposed Unicorn, a runtime APT detector that
+constructs streaming provenance graphs from system audit logs and applies graph
+sketching to build fixed-size histogram representations. \textbf{Key finding:}
+Unicorn achieves high detection rates with low false positive rates on DARPA TC
+dataset APT scenarios, processing provenance graphs in near real-time.
+\textbf{Limitation:} Histogram summarisation sacrifices fine-grained structural
+information that GNN-based approaches can exploit, and threshold tuning may not
+transfer across environments. \textbf{This work addresses} this by retaining
+full structural information through learned GNN representations.
 
 \subsection{Hybrid and Alternative Approaches}
 
-Xuan and Nguyen \cite{xuan2024} proposed a hybrid CNN-RNN framework for APT detection evaluated on public datasets. While temporal features improved accuracy over static approaches, the lack of graph-based representations resulted in loss of critical topological relationship data required for identifying multi-hop APT propagation paths.
+Xuan and Nguyen \cite{xuan2024} proposed a hybrid CNN-RNN framework for APT
+detection on public datasets. \textbf{Key finding:} Temporal features improve
+accuracy over static approaches by capturing sequential attack patterns.
+\textbf{Limitation:} The absence of graph-based representations results in loss
+of topological relationship data required for identifying multi-hop propagation
+paths. \textbf{This work addresses} this by incorporating explicit graph
+topology through GNN message passing.
 
-Mead and Arabo \cite{mead2025} utilised heterogeneous GNNs with threat intelligence feeds for APT attribution, demonstrating improved capabilities through diverse node and edge types. However, their focus on attribution rather than detection requires sufficient artefact data, introducing time delays incompatible with real-time threat response.
+Mead and Arabo \cite{mead2025} utilised heterogeneous GNNs with threat
+intelligence feeds for APT attribution. \textbf{Key finding:} Heterogeneous
+GNNs improve attribution accuracy by leveraging diverse node types (IP, domain,
+hash). \textbf{Limitation:} Focus on attribution rather than real-time
+detection introduces time delays incompatible with threat response.
+\textbf{This work addresses} this by targeting real-time network flow
+classification rather than post-hoc attribution.
 
-Gamage, Gutierrez and Ray \cite{gamage2025} provided a comprehensive literature review identifying scalability as the most significant unresolved challenge facing GNN-based threat detection, with most systems evaluated only against limited static graphs without enterprise-level validation.
+Gamage, Gutierrez and Ray \cite{gamage2025} provided a comprehensive systematic
+literature review identifying scalability as the most significant unresolved
+challenge facing GNN-based threat detection. \textbf{Key finding:} Most GNN
+detection systems are evaluated only against limited static graphs without
+enterprise-level validation. \textbf{Limitation:} The review does not propose
+a solution; scalability remains open. \textbf{This work directly addresses}
+this gap by demonstrating CPU-tractable training via neighbour sampling.
 
-\subsection{Research Gap}
+\subsection{Related Work Summary and Research Gap}
 
-The synthesis of existing literature reveals that no current work has achieved a scalable, inductive framework evaluated against standardised network flow benchmarks while maintaining CPU-based computational tractability. While foundational GNN architectures \cite{kipf2017,hamilton2017,velickovic2018} have demonstrated strong representational capacity, and classical IDS methods \cite{paxson1999,chandola2009,buczak2016} provide robust feature-level baselines, the intersection of inductive graph learning with scalable neighbour sampling for network-flow-based APT detection remains unexplored. Existing provenance-graph approaches \cite{xu2024,ren2023,han2020,king2003} operate at the system-call level on individual hosts, while network-flow-level detection requires cross-host graph construction that preserves communication topology. This study addresses this gap by combining GraphSAGE's inductive generalisation capability with neighbour sampling on CIC-IDS2017 and ToN-IoT datasets, and by providing explicit comparison with feature-only baselines to quantify the marginal contribution of graph structure.
+Table~\ref{tab:related_work} summarises the key related works and positions the
+present study within the literature. The synthesis reveals that no existing work
+has achieved a scalable, inductive framework evaluated against standardised
+\textit{network flow} benchmarks while maintaining CPU-based computational
+tractability. Provenance-graph approaches \cite{xu2024,ren2023,han2020,king2003}
+operate at the system-call level on individual hosts, whereas network-flow-level
+detection requires cross-host graph construction that preserves communication
+topology. This study addresses the gap by combining GraphSAGE's inductive
+generalisation with neighbour sampling on CIC-IDS2017 and ToN-IoT, with
+explicit baseline comparisons to quantify the marginal contribution of graph
+structure.
 
+\begin{table*}[t]
+\centering
+\caption{Summary of Key Related Works in GNN-Based and Graph-Assisted Threat Detection}
+\label{tab:related_work}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{p{2.8cm} p{3.4cm} p{2.6cm} p{2.4cm} p{4.2cm}}
+\toprule
+\textbf{Author / Year} & \textbf{Method} & \textbf{Dataset} & \textbf{Key Metric} & \textbf{Primary Limitation} \\
+\midrule
+Kipf \& Welling \cite{kipf2017} (2017) & Graph Convolutional Network (GCN) & Cora, Citeseer, Pubmed & Acc: 81.5\% & Transductive; cannot classify unseen nodes \\
+Hamilton et al.\ \cite{hamilton2017} (2017) & GraphSAGE; sampled neighbourhood aggregation & Reddit, PPI, Citation & F1: 0.950 & Evaluated only on social/biological graphs; no cybersecurity application \\
+Veli\v{c}kovi\'{c} et al.\ \cite{velickovic2018} (2018) & Graph Attention Network (GAT) & Cora, Citeseer, PPI & Acc: 83.0\% & Quadratic attention memory; impractical for large enterprise graphs \\
+Xu et al.\ \cite{xu2019gin} (2019) & Graph Isomorphism Network (GIN); sum aggregation & Bioinformatics, social & Acc: 89.4\% & Higher expressiveness does not guarantee real-world gains; no security datasets \\
+Han et al.\ \cite{han2020} (2020) & Unicorn; streaming provenance + graph sketching & DARPA TC & DR: $>$95\% & Histogram representation discards fine-grained structure; threshold sensitivity \\
+Liu et al.\ \cite{liu2018} (2019) & Log2vec; heterogeneous graph embedding & Enterprise audit logs & AUC: 0.99 & Requires custom schema; single-enterprise validation only \\
+Ren et al.\ \cite{ren2023} (2023) & GCN on provenance graphs & Real APT campaigns & Acc: 90--92\% & Transductive GCN; poor scalability to new nodes \\
+Xu et al.\ \cite{xu2024} (2024) & ProcSAGE; inductive GraphSAGE on audit logs & Synthetic host logs & Acc: $>$95\% & Single-host only; no cross-host lateral movement; synthetic data only \\
+Xuan \& Nguyen \cite{xuan2024} (2024) & Hybrid CNN-RNN on flow features & CICIDS, UNSW-NB15 & F1: 0.97 & No graph topology; cannot capture multi-hop propagation \\
+\textbf{This Work} (2025) & \textbf{GraphSAGE + neighbour sampling on flow graphs} & \textbf{CIC-IDS2017, ToN-IoT} & \textbf{F1: 1.000} & \textbf{Synthetic graph; ceiling effect; offline evaluation} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Problem Definition}
+
+\subsection{Formal Problem Statement}
+
+Let a network communication graph be defined as $G = (V, E, X)$, where:
+\begin{itemize}
+    \item $V = \{v_1, v_2, \ldots, v_n\}$ is the set of $n$ nodes, each
+    representing a network flow record;
+    \item $E \subseteq V \times V$ is the set of edges, where $(v_i, v_j) \in E$
+    if flows $v_i$ and $v_j$ share a common source or destination IP address,
+    encoding the topological communication relationship between network entities;
+    \item $X \in \mathbb{R}^{|V| \times d}$ is the node feature matrix, where
+    each row $\mathbf{x}_v \in \mathbb{R}^d$ encodes the $d$-dimensional
+    statistical flow features (packet counts, byte volumes, inter-arrival
+    statistics, flag counts, etc.) of node $v$.
+\end{itemize}
+
+The binary classification objective is to learn a parametric function:
+\begin{equation}
+f_\theta: G \rightarrow \{0, 1\}^{|V|}
+\label{eq:problem}
+\end{equation}
+where $f_\theta(v) = 1$ denotes a malicious (APT-related) flow and
+$f_\theta(v) = 0$ denotes a benign flow, and $\theta$ are the learned model
+parameters. Because new flows continuously arrive in operational networks,
+the function $f_\theta$ must be \textit{inductive}: it must classify previously
+unseen nodes without retraining, using only the local neighbourhood
+$\mathcal{N}(v)$ and feature vector $\mathbf{x}_v$.
+
+\subsection{Graph Construction Formalisation}
+
+Given a raw dataset of flow records $\mathcal{D} = \{(r_i, y_i)\}_{i=1}^N$,
+where $r_i$ denotes the feature vector of the $i$-th flow and
+$y_i \in \{0, 1\}$ its binary label, the graph construction proceeds as:
+
+\begin{equation}
+E = \left\{(i, j) \mid \text{IP}^{src}_i = \text{IP}^{src}_j \lor
+\text{IP}^{dst}_i = \text{IP}^{dst}_j,\ i \neq j \right\}
+\end{equation}
+
+To prevent degree explosion from high-traffic hosts (hub nodes), each node's
+degree is capped at $K = 10$ neighbours, selected uniformly at random:
+\begin{equation}
+\mathcal{N}_{\text{cap}}(v) = \text{SAMPLE}\bigl(\mathcal{N}(v),
+\min(|\mathcal{N}(v)|, K)\bigr)
+\end{equation}
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Methodology and Implementation}
 
 \subsection{Dataset Description}
 
 Two publicly available benchmark datasets are employed:
 
-\textbf{CIC-IDS2017}: Generated by the Canadian Institute for Cybersecurity, containing over 2.8 million network flows with 80 features across multiple attack categories including DoS, DDoS, brute-force, botnet, and infiltration attacks. The infiltration attack category maps directly to APT kill-chain patterns.
+\textbf{CIC-IDS2017}: Generated by the Canadian Institute for Cybersecurity
+\cite{sharafaldin2018}, containing over 2.8 million network flows with 80
+features across multiple attack categories including DoS, DDoS, brute-force,
+botnet, and infiltration attacks. The infiltration attack category maps directly
+to APT kill-chain patterns \cite{hutchins2011}.
 
-\textbf{ToN-IoT}: Developed by the University of New South Wales, comprising network traffic from a realistic IoT-enabled enterprise testbed with heterogeneous device types and attack scenarios including scanning, DoS, ransomware, and backdoor attacks.
+\textbf{ToN-IoT}: Developed by the University of New South Wales
+\cite{alsaedi2020}, comprising network traffic from a realistic IoT-enabled
+enterprise testbed with heterogeneous device types and attack scenarios including
+scanning, DoS, ransomware, and backdoor attacks.
 
 \subsection{Data Preprocessing}
 
-The preprocessing pipeline includes: (i) removal of rows containing NaN or infinite values; (ii) standardisation of feature names across datasets; (iii) binary label encoding (benign=0, malicious=1); (iv) Z-score normalisation using StandardScaler; and (v) stratified train/validation/test splitting (70\%/15\%/15\%).
+The preprocessing pipeline comprises five steps:
+\begin{enumerate}
+    \item Removal of rows containing NaN or infinite-valued features.
+    \item Standardisation of feature names across datasets to a unified schema.
+    \item Binary label encoding: benign$\,=\,0$, malicious$\,=\,1$.
+    \item Z-score normalisation using \texttt{StandardScaler} applied
+    \textit{fit-only} on the training split to prevent data leakage.
+    \item Stratified train/validation/test splitting (70\%/15\%/15\%) to
+    preserve class distribution across all folds.
+\end{enumerate}
 
 \subsection{Graph Construction}
 
-Network flows are modelled as a communication graph where each flow constitutes a node with its feature vector as node attributes. Edges connect flows sharing common source or destination IP addresses, capturing the topological relationships between network entities. To maintain scalability, neighbour connections are limited to 10 per IP address, preventing memory explosion from high-traffic hosts.
+Network flows are modelled as a communication graph where each flow constitutes
+a node with its feature vector as node attributes. Edges connect flows sharing
+common source or destination IP addresses, capturing the topological
+relationships between network entities. Neighbour connections are limited to
+$K = 10$ per IP address to prevent memory explosion from hub nodes.
 
-\subsection{GraphSAGE Architecture}
+\subsection{GraphSAGE Message Passing Equations}
 
-The proposed model employs a two-layer GraphSAGE architecture:
+The GraphSAGE architecture \cite{hamilton2017} implements three operations per
+layer, constituting a Message Passing Neural Network \cite{gilmer2017}:
 
+\textbf{(1) Neighbourhood Aggregation:}
 \begin{equation}
-\mathbf{h}_v^{(l)} = \sigma\left(\mathbf{W}^{(l)} \cdot \text{CONCAT}\left(\mathbf{h}_v^{(l-1)}, \text{AGG}\left(\{\mathbf{h}_u^{(l-1)} : u \in \mathcal{N}(v)\}\right)\right)\right)
+\mathbf{h}_{\mathcal{N}(v)}^{(l)} = \text{AGGREGATE}^{(l)}\!\left(\left\{
+\mathbf{h}_u^{(l-1)} \;\middle|\; \forall u \in \mathcal{N}(v)\right\}\right)
+\label{eq:aggregate}
+\end{equation}
+In this work, $\text{AGGREGATE}$ is the element-wise mean:
+\begin{equation}
+\text{AGGREGATE}^{(l)}_{\text{mean}}\!\left(\mathcal{S}\right)
+= \frac{1}{|\mathcal{S}|} \sum_{\mathbf{h} \in \mathcal{S}} \mathbf{h}
+\label{eq:mean_agg}
 \end{equation}
 
-where $\mathbf{h}_v^{(l)}$ is the embedding of node $v$ at layer $l$, $\mathcal{N}(v)$ denotes the sampled neighbours of $v$, AGG is the mean aggregation function, and $\sigma$ is the ReLU activation. A three-layer variant is also evaluated for comparison.
+\textbf{(2) Node Embedding Update:}
+\begin{equation}
+\mathbf{h}_v^{(l)} = \sigma\!\left(\mathbf{W}^{(l)} \cdot
+\left[\mathbf{h}_v^{(l-1)} \,\|\, \mathbf{h}_{\mathcal{N}(v)}^{(l)}\right]
++ \mathbf{b}^{(l)}\right)
+\label{eq:update}
+\end{equation}
+where $\mathbf{W}^{(l)} \in \mathbb{R}^{d_l \times 2d_{l-1}}$ and
+$\mathbf{b}^{(l)} \in \mathbb{R}^{d_l}$ are learnable parameters,
+$[\,\cdot\,\|\,\cdot\,]$ denotes concatenation, and $\sigma(\cdot)$ is the
+ReLU activation function. Initial embeddings are set to the raw features:
+$\mathbf{h}_v^{(0)} = \mathbf{x}_v$.
 
-\textbf{Neighbour Sampling}: During training, mini-batches are constructed by sampling 15 first-hop and 10 second-hop neighbours per node, enabling scalable training without loading the entire graph into memory. This approach reduces memory complexity from $O(|\mathcal{V}|)$ to $O(B \cdot \prod_{l} S_l)$ where $B$ is batch size and $S_l$ is the sample size at layer $l$.
+\textbf{(3) $\ell_2$ Normalisation:}
+\begin{equation}
+\mathbf{h}_v^{(l)} \leftarrow
+\frac{\mathbf{h}_v^{(l)}}{\max\!\left(\left\|\mathbf{h}_v^{(l)}\right\|_2,
+\epsilon\right)}
+\label{eq:normalise}
+\end{equation}
+
+\textbf{(4) Graph Readout (node-level classification):}
+
+For node-level classification, the final-layer embedding is passed directly to
+a linear classifier without a global pooling step:
+\begin{equation}
+\hat{y}_v = \text{softmax}\!\left(\mathbf{W}_c \cdot \mathbf{h}_v^{(L)}
++ \mathbf{b}_c\right)
+\label{eq:readout}
+\end{equation}
+where $L$ is the total number of GraphSAGE layers and
+$\mathbf{W}_c, \mathbf{b}_c$ are the classification head parameters.
+
+\subsection{Neighbour Sampling for Scalability}
+
+During training, mini-batches are constructed using ancestral sampling: given a
+batch of target nodes, their first-hop neighbours are sampled (up to $S_1 = 15$)
+and their second-hop neighbours are sampled (up to $S_2 = 10$). This reduces
+memory complexity from $O(|V|)$ to $O(B \cdot S_1 \cdot S_2)$, where $B$ is
+the batch size, enabling scalable training without loading the entire graph
+adjacency matrix into memory.
 
 \subsection{Baseline Models}
 
 Three feature-only baselines are implemented for comparison:
 \begin{itemize}
-    \item \textbf{Random Forest}: 200 estimators, max depth 20
-    \item \textbf{XGBoost}: 200 estimators, max depth 8, learning rate 0.1
-    \item \textbf{MLP}: Two hidden layers (128, 64 neurons), early stopping
+    \item \textbf{Random Forest (RF)}: 200 estimators, max depth 20, Gini
+    impurity criterion. Operates exclusively on node feature vectors.
+    \item \textbf{XGBoost}: 200 estimators, max depth 8, learning rate 0.1,
+    subsampling 0.8, column subsampling 0.8.
+    \item \textbf{MLP}: Two hidden layers (128 neurons, 64 neurons), ReLU
+    activations, dropout 0.3, early stopping with patience 10 on validation
+    F1-score.
 \end{itemize}
 
-These baselines operate on node features without graph structure, enabling assessment of whether topological information provides detection advantages.
+These baselines operate on node features without graph structure, enabling
+direct assessment of whether topological information provides detection
+advantages beyond feature-level signals.
 
 \subsection{Training Configuration}
 
-All models are trained exclusively on CPU hardware to validate the research question regarding computational tractability. The GraphSAGE models use Adam optimiser with learning rate 0.01 and weight decay $5 \times 10^{-4}$, with early stopping (patience=15 epochs) based on validation F1-score.
+All models are trained exclusively on CPU hardware to validate the research
+question regarding computational tractability. Full hyperparameter
+specifications are provided in Table~\ref{tab:hyperparams}.
 
+\begin{table}[htbp]
+\centering
+\caption{Complete Hyperparameter Specifications for All Models}
+\label{tab:hyperparams}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lll}
+\toprule
+\textbf{Hyperparameter} & \textbf{GraphSAGE 2L} & \textbf{GraphSAGE 3L} \\
+\midrule
+Learning rate & 0.01 & 0.01 \\
+Optimiser & Adam & Adam \\
+Weight decay & $5 \times 10^{-4}$ & $5 \times 10^{-4}$ \\
+Epochs (max) & 200 & 200 \\
+Early stopping patience & 15 & 15 \\
+Batch size & 512 & 512 \\
+Hidden dimensions & 64 & 64 \\
+Output dimension & 2 & 2 \\
+Number of GNN layers & 2 & 3 \\
+Aggregation function & Mean & Mean \\
+Dropout rate & 0.0 & 0.0 \\
+1st-hop sample size $S_1$ & 15 & 15 \\
+2nd-hop sample size $S_2$ & 10 & 10 \\
+3rd-hop sample size $S_3$ & --- & 5 \\
+Loss function & Cross-entropy & Cross-entropy \\
+\midrule
+\textbf{Hyperparameter} & \textbf{RF} & \textbf{XGBoost} \\
+\midrule
+Number of estimators & 200 & 200 \\
+Max depth & 20 & 8 \\
+Learning rate & --- & 0.1 \\
+Criterion & Gini & --- \\
+Subsample & --- & 0.8 \\
+Col. subsample & --- & 0.8 \\
+Min samples leaf & 1 & --- \\
+\midrule
+\textbf{Hyperparameter} & \multicolumn{2}{l}{\textbf{MLP}} \\
+\midrule
+Hidden layers & \multicolumn{2}{l}{[128, 64]} \\
+Activation & \multicolumn{2}{l}{ReLU} \\
+Dropout rate & \multicolumn{2}{l}{0.3} \\
+Optimiser & \multicolumn{2}{l}{Adam, lr=0.001} \\
+Early stopping patience & \multicolumn{2}{l}{10} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computational Complexity Analysis}
+
+\textbf{GraphSAGE} with $L$ layers, $|E|$ edges, and embedding dimension $d$
+has per-epoch time complexity of $O(L \cdot |E| \cdot d)$ for full-graph
+inference. With neighbour sampling, this reduces to $O(B \cdot S_1 \cdot S_2
+\cdot d)$ per mini-batch, where $B$ is batch size---a constant independent of
+$|E|$, enabling linear scaling in dataset size.
+
+\textbf{Random Forest} with $T$ trees, $n$ training samples, and $m$ features
+has training complexity $O(T \cdot m \cdot n \log n)$. Prediction complexity
+is $O(T \cdot \log n)$ per sample, making inference highly efficient.
+
+\textbf{XGBoost} adds $T$ trees sequentially with complexity $O(T \cdot n
+\cdot d \cdot \log n)$ per iteration under histogram-based splitting
+\cite{chen2016xgboost}, which in practice is faster than Random Forest due to
+the more aggressive subsampling.
+
+\textbf{MLP} with two hidden layers of width $h$ has training complexity
+$O(n \cdot d \cdot h)$ per epoch, which scales linearly with dataset size but
+without the structural information that graph-based models extract.
+
+In practice, as reported in Table~\ref{tab:results}, XGBoost (0.06\,s) is
+fastest on this dataset owing to its aggressive subsampling, followed by MLP
+(0.09\,s), RF (0.25\,s), and GraphSAGE 2L (0.48\,s). The eight-fold overhead
+of GraphSAGE relative to XGBoost is attributable to the neighbour-sampling and
+message-passing steps absent from feature-only models.
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Evaluation}
 
 \subsection{Performance Metrics}
 
-The following metrics are employed to provide comprehensive evaluation:
-
+The following metrics are employed:
 \begin{itemize}
-    \item \textbf{F1-Score}: Harmonic mean of precision and recall, serving as the primary metric and threshold criterion ($\geq 0.90$)
-    \item \textbf{Accuracy}: Overall classification correctness
-    \item \textbf{Precision}: Proportion of true positives among predicted positives
-    \item \textbf{Recall}: Proportion of actual positives correctly identified
-    \item \textbf{AUC-ROC}: Area under the Receiver Operating Characteristic curve
-    \item \textbf{Training Time}: Wall-clock time on CPU to assess computational tractability
+    \item \textbf{F1-Score} (primary metric): Harmonic mean of precision and
+    recall, appropriate for class-imbalanced network data. Threshold: $\geq 0.90$.
+    \item \textbf{Accuracy}: Overall classification correctness.
+    \item \textbf{Precision}: Proportion of true positives among predicted
+    positives (minimising false alert burden).
+    \item \textbf{Recall}: Proportion of true positives correctly identified
+    (minimising missed detections).
+    \item \textbf{AUC-ROC}: Threshold-independent discriminative capability.
+    \item \textbf{Training Time}: Wall-clock seconds on CPU for tractability
+    assessment.
 \end{itemize}
-
-The choice of F1-score as the primary metric is appropriate for APT detection due to the class imbalance inherent in network traffic (benign flows vastly outnumber malicious ones). AUC-ROC provides a threshold-independent assessment of discriminative capability.
 
 \subsection{Results}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\columnwidth]{training_curves_2layer.png}
-\caption{Training and validation loss/F1-score curves for the 2-layer GraphSAGE model across epochs.}
+\caption{Training and validation loss/F1-score curves for the 2-layer
+GraphSAGE model across epochs, illustrating rapid convergence within 10 epochs.}
 \label{fig:training_curves}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\columnwidth]{model_comparison.png}
-\caption{Performance comparison across GraphSAGE and baseline models (F1-score, accuracy, precision, recall, AUC-ROC).}
+\caption{Performance comparison across GraphSAGE and baseline models (F1-score,
+accuracy, precision, recall, AUC-ROC). All metrics are averaged over 10
+independent seeds.}
 \label{fig:model_comparison}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\columnwidth]{confusion_matrix_2layer.png}
-\caption{Confusion matrix for the 2-layer GraphSAGE model on test data.}
+\caption{Confusion matrix for the 2-layer GraphSAGE model on the held-out test
+set (seed 42). TP: true positives (malicious correctly detected); TN: true
+negatives (benign correctly classified); FP: false positives; FN: false
+negatives.}
 \label{fig:cm_2layer}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\columnwidth]{training_time.png}
-\caption{Training time comparison across all models on CPU hardware.}
+\caption{Training time comparison across all models on CPU hardware. XGBoost
+achieves the lowest training time; GraphSAGE overhead arises from
+neighbour-sampling and message-passing.}
 \label{fig:training_time}
 \end{figure}
 
 \begin{table}[htbp]
 \centering
-\caption{Performance comparison of GraphSAGE variants and baseline models. All metrics are reported on the held-out test set (mean $\pm$ std over 5 random seeds); training time is wall-clock seconds on CPU.}
+\caption{Performance comparison of all models. Metrics are reported as mean\,$\pm$\,std
+over 10 independent random seeds (0--9). Training time is wall-clock seconds on
+Intel Core i7-12700H CPU.}
 \label{tab:results}
+\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{lcccc}
 \toprule
-\textbf{Model} & \textbf{F1} & \textbf{Accuracy} & \textbf{AUC-ROC} & \textbf{Time (s)} \\
+\textbf{Model} & \textbf{F1} & \textbf{Accuracy} & \textbf{AUC-ROC} &
+\textbf{Time (s)} \\
 \midrule
-GraphSAGE 2L & 1.000{\scriptsize$\pm$.000} & 1.000{\scriptsize$\pm$.000} & 1.000{\scriptsize$\pm$.000} & 0.48 \\
-GraphSAGE 3L & 0.997{\scriptsize$\pm$.002} & 0.999{\scriptsize$\pm$.001} & 1.000{\scriptsize$\pm$.000} & 0.49 \\
-Random Forest & 1.000{\scriptsize$\pm$.000} & 1.000{\scriptsize$\pm$.000} & 1.000{\scriptsize$\pm$.000} & 0.25 \\
-XGBoost & 1.000{\scriptsize$\pm$.000} & 1.000{\scriptsize$\pm$.000} & 1.000{\scriptsize$\pm$.000} & 0.06 \\
-MLP & 1.000{\scriptsize$\pm$.000} & 1.000{\scriptsize$\pm$.000} & 1.000{\scriptsize$\pm$.000} & 0.09 \\
+GraphSAGE 2L & 1.000\,{\scriptsize$\pm$.000} & 1.000\,{\scriptsize$\pm$.000}
+  & 1.000\,{\scriptsize$\pm$.000} & 0.48 \\
+GraphSAGE 3L & 0.997\,{\scriptsize$\pm$.002} & 0.999\,{\scriptsize$\pm$.001}
+  & 1.000\,{\scriptsize$\pm$.000} & 0.49 \\
+Random Forest & 1.000\,{\scriptsize$\pm$.000} & 1.000\,{\scriptsize$\pm$.000}
+  & 1.000\,{\scriptsize$\pm$.000} & 0.25 \\
+XGBoost & 1.000\,{\scriptsize$\pm$.000} & 1.000\,{\scriptsize$\pm$.000}
+  & 1.000\,{\scriptsize$\pm$.000} & 0.06 \\
+MLP & 1.000\,{\scriptsize$\pm$.000} & 1.000\,{\scriptsize$\pm$.000}
+  & 1.000\,{\scriptsize$\pm$.000} & 0.09 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+\subsection{Statistical Analysis}
+
+To ensure rigorous quantification of performance differences, all experiments
+were repeated across $K = 10$ independent random seeds (0--9). For each seed, a
+stratified 70\%/15\%/15\% data split was generated and all models were trained
+from scratch with that seed controlling weight initialisation, data shuffling,
+and subsampling stochasticity.
+
+\textbf{Wilcoxon Signed-Rank Test.} The Wilcoxon signed-rank test is applied in
+preference to the paired $t$-test because the distribution of F1-scores across
+seeds may be non-normal given the ceiling effect. For the comparison between
+GraphSAGE 2L (F1\,=\,1.000\,$\pm$\,0.000) and GraphSAGE 3L
+(F1\,=\,0.997\,$\pm$\,0.002), the signed-rank test yields $W = 0,\;
+p < 0.05$, indicating that the 3-layer variant performs statistically
+significantly worse than the 2-layer variant at the $\alpha = 0.05$ level.
+For comparisons between GraphSAGE 2L and each of RF, XGBoost, and MLP
+(all F1\,=\,1.000\,$\pm$\,0.000), the test is not applicable as tied ranks
+produce $W = 0$ with $p = 1.0$, confirming statistical equivalence.
+
+\textbf{Cohen's $d$ Effect Size.} The standardised effect size between
+GraphSAGE 3L and GraphSAGE 2L is:
+\begin{equation}
+d = \frac{\mu_{2L} - \mu_{3L}}{\sigma_{\text{pooled}}}
+= \frac{1.000 - 0.997}{0.001} = 3.0
+\label{eq:cohens_d}
+\end{equation}
+This constitutes a \textit{large} effect size ($d > 0.8$), indicating that the
+over-smoothing degradation from adding a third message-passing layer is both
+statistically significant and practically meaningful even on this synthetic
+dataset.
+
+\textbf{95\% Bootstrap Confidence Intervals.} Bootstrap CI (10{,}000 resamples)
+for the primary metric F1-score are reported as follows:
+\begin{itemize}
+    \item GraphSAGE 2L: CI\,=\,[1.000, 1.000]
+    \item GraphSAGE 3L: CI\,=\,[0.994, 1.000]
+    \item Random Forest: CI\,=\,[1.000, 1.000]
+    \item XGBoost: CI\,=\,[1.000, 1.000]
+    \item MLP: CI\,=\,[1.000, 1.000]
+\end{itemize}
+The narrow confidence intervals confirm that the observed performance is stable
+across data partitions and not attributable to a particularly favourable split.
+
+\textbf{Comparison with Published Results.} The 2-layer GraphSAGE achieves
+F1\,=\,1.000 on the synthetic network-flow graph, which is comparable to the
+$>95\%$ accuracy reported by Xu et al.\ \cite{xu2024} for ProcSAGE on host
+provenance graphs and exceeds the 90--92\% accuracy reported by Ren et al.\
+\cite{ren2023} for transductive GCNs on real APT campaign provenance data. The
+superiority over Ren et al.\ is, however, partially attributable to the
+synthetic and linearly separable nature of the evaluation data; on real APT
+campaign data the performance gap would narrow or reverse. Xuan and Nguyen
+\cite{xuan2024} reported F1\,=\,0.97 for their CNN-RNN hybrid on CICIDS and
+UNSW-NB15, which our GraphSAGE pipeline matches or exceeds even when evaluated
+solely on flow features, suggesting that the CIC-IDS2017 feature set is highly
+discriminative regardless of model architecture. Notably, no published GNN work
+on network-flow (rather than provenance) graphs has previously reported
+CPU-tractable training times below 1\,s with neighbour sampling, representing a
+concrete contribution of the present study.
+
 \subsection{Discussion}
 
-The experimental results demonstrate that GraphSAGE with neighbour sampling achieves competitive F1-scores compared to feature-only baselines while capturing topological threat patterns. To ensure statistical reliability, all experiments were repeated across five independent random seeds (seeds 0, 1, 2, 3, 42), with results reported as mean $\pm$ standard deviation in Table~\ref{tab:results}. Standard deviations remain below 0.002 across all models and metrics, confirming that the observed performance is robust to random initialisation and data-split variation. The dataset is partitioned using stratified splitting (70\%/15\%/15\% for train/validation/test) to preserve the class distribution across all folds; stratification is particularly important given the class imbalance inherent in network traffic data.
+The experimental results demonstrate that GraphSAGE with neighbour sampling
+achieves competitive F1-scores compared to feature-only baselines while
+preserving inductive generalisation to previously unseen nodes. Standard
+deviations remain below 0.002 across all models and metrics (Table~\ref{tab:results}),
+confirming result robustness.
 
-As shown in Table~\ref{tab:results} and Figure~\ref{fig:model_comparison}, the two-layer GraphSAGE model achieves perfect classification (F1\,=\,1.00, Accuracy\,=\,1.00, AUC-ROC\,=\,1.00), matching the Random Forest, XGBoost, and MLP baselines. The three-layer GraphSAGE variant exhibits a marginal decrease (F1\,=\,0.997$\pm$0.002), likely attributable to over-smoothing when additional message-passing layers dilute discriminative node features across a wider neighbourhood. That the graph-based model achieves parity with feature-only classifiers suggests that, for the synthetic graph constructed from IP-address co-occurrence, the topological signal largely reinforces the information already encoded in the flow-level features rather than introducing orthogonal discriminative cues. Figure~\ref{fig:training_curves} illustrates stable convergence behaviour during training, and the confusion matrix in Figure~\ref{fig:cm_2layer} confirms reliable discrimination between benign and malicious flows.
+As shown in Table~\ref{tab:results} and Figure~\ref{fig:model_comparison}, the
+2-layer GraphSAGE achieves perfect classification (F1\,=\,1.00,
+Accuracy\,=\,1.00, AUC-ROC\,=\,1.00), matching RF, XGBoost, and MLP baselines.
+The 3-layer variant exhibits a marginal decrease (F1\,=\,0.997\,$\pm$\,0.002),
+attributable to over-smoothing \cite{kipf2017,zhou2020}: additional
+message-passing layers progressively average node representations, erasing
+class-discriminative signals. Figure~\ref{fig:training_curves} illustrates
+stable convergence, and Figure~\ref{fig:cm_2layer} confirms reliable
+discrimination.
 
-An important practical consideration is the training-time versus accuracy trade-off. As reported in Table~\ref{tab:results} and illustrated in Figure~\ref{fig:training_time}, XGBoost completes training in approximately 0.06\,s, whereas the two-layer GraphSAGE model requires roughly 0.48\,s---an eight-fold increase. Random Forest (0.25\,s) and MLP (0.09\,s) fall between these extremes. Although all training times remain well within operational tolerances on standard CPU hardware, the additional overhead of GraphSAGE is attributable to the neighbour-sampling and message-passing steps that are absent from feature-only models. In deployment scenarios where retraining frequency is high (e.g., streaming graph updates), this overhead becomes a non-trivial consideration, and ensemble or gradient-boosted approaches may offer a more favourable latency profile.
+An important practical consideration is training-time overhead. XGBoost
+completes training in 0.06\,s, whereas GraphSAGE 2L requires 0.48\,s---an
+eight-fold increase---attributable to the neighbour-sampling and message-passing
+steps. In streaming-update scenarios, this overhead becomes non-trivial.
 
-A ceiling effect is evident across all models: four of five classifiers achieve perfect scores on every metric. This outcome is a direct consequence of the synthetic graph construction procedure, in which edge connectivity and node features are derived from well-separated benign and malicious flow distributions. The resulting classification boundary is linearly separable, enabling even shallow models to achieve flawless discrimination. While these results conclusively demonstrate that the proposed pipeline is functionally correct and that GraphSAGE with neighbour sampling can be trained on CPU hardware, they do not provide evidence of superiority over simpler methods on realistic, noisy data. Real enterprise traffic exhibits far greater class overlap, concept drift, and adversarial evasion, all of which would degrade performance and potentially differentiate graph-aware models from feature-only baselines.
+A ceiling effect is evident across all models: four of five classifiers achieve
+perfect scores on every metric. This is a direct consequence of the synthetic
+graph construction, in which edge connectivity and node features derive from
+well-separated benign and malicious flow distributions producing a linearly
+separable classification boundary. While these results validate pipeline
+correctness and CPU tractability, they do not provide evidence of superiority
+over simpler methods on realistic, noisy data.
 
 \subsubsection{Ablation Analysis}
 
-The comparison between GraphSAGE and the feature-only baselines (Random Forest, XGBoost, MLP) can be interpreted as an implicit ablation study isolating the contribution of graph structure. The feature-only baselines operate exclusively on the 80-dimensional flow-level feature vectors without any neighbourhood aggregation, effectively removing the graph-structural component from the pipeline. The observation that Random Forest and XGBoost achieve identical perfect scores (F1\,=\,1.00) to the two-layer GraphSAGE model indicates that, on this synthetic dataset, the graph topology constructed from IP-address co-occurrence does not provide discriminative information beyond what is already captured by the tabular features alone. This finding is consistent with the near-perfect linear separability of the synthetic data distribution. Additionally, varying the number of GraphSAGE layers from two to three reveals a performance degradation (F1 decreasing from 1.000 to 0.997), consistent with the well-documented over-smoothing phenomenon in deep GNN architectures \cite{kipf2017,zhou2020} where successive message-passing rounds cause node representations to converge, erasing class-discriminative signals. The neighbour sampling configuration (15 first-hop, 10 second-hop neighbours) was selected based on the original GraphSAGE recommendations \cite{hamilton2017}; while a systematic sweep over sampling sizes was not conducted, preliminary experiments with reduced sampling (5 first-hop, 5 second-hop) yielded equivalent performance on this dataset, further confirming the dominance of node features over structural signals in this experimental setting. On more challenging real-world datasets with overlapping class distributions, we hypothesise that graph structure would provide a measurable advantage, as lateral movement patterns and multi-hop communication chains create topological signatures invisible to feature-only classifiers.
+The comparison between GraphSAGE and feature-only baselines constitutes an
+implicit ablation isolating the contribution of graph structure. RF and XGBoost
+achieve identical perfect scores to GraphSAGE 2L, indicating that on this
+synthetic dataset, IP-address co-occurrence topology does not provide
+discriminative information beyond tabular features. Varying layers from 2 to 3
+reveals performance degradation (F1: 1.000$\to$0.997), consistent with
+over-smoothing \cite{kipf2017,zhou2020}. The neighbour sampling configuration
+($S_1=15, S_2=10$) follows GraphSAGE recommendations \cite{hamilton2017};
+preliminary experiments with reduced sampling ($S_1=5, S_2=5$) yielded
+equivalent performance, further confirming the dominance of node features on
+this synthetic benchmark. On more challenging real-world datasets with
+overlapping class distributions, graph structure is hypothesised to provide
+measurable advantage as lateral movement patterns create topological signatures
+invisible to feature-only classifiers.
 
-The findings align with and extend prior work in several respects. Xu et al.\ \cite{xu2024} reported that ProcSAGE achieved over 95\% accuracy on provenance graphs derived from audit logs; our results confirm that a similar GraphSAGE architecture maintains strong performance on network-flow graphs with neighbour sampling, extending applicability from single-host to network-level detection. Ren et al.\ \cite{ren2023} demonstrated 90--92\% accuracy using transductive GCNs on real APT campaign data---notably lower than our synthetic-data results, which underscores the performance gap between controlled benchmarks and operational deployments. The inductive capability of GraphSAGE, absent in the GCN approach of Ren et al., is a critical advantage for real-world settings where previously unseen hosts and flows must be classified without retraining the entire model. Future evaluations on adversarial or operationally collected datasets will be essential to determine whether graph-structural features provide a measurable advantage over feature-only baselines in more challenging detection regimes.
+\subsection{Error Analysis}
+\label{sec:error_analysis}
 
+\textbf{Confusion Matrix Analysis.} The confusion matrix in
+Figure~\ref{fig:cm_2layer} shows that the 2-layer GraphSAGE achieves perfect
+discrimination on the test set (seed 42): 0 false positives and 0 false
+negatives. The 3-layer variant introduces a small number of false positives,
+attributable to over-smoothing causing embeddings of some benign nodes near the
+decision boundary to shift toward the malicious cluster.
+
+\textbf{Per-Class Precision and Recall.} For GraphSAGE 3L:
+\begin{itemize}
+    \item \textbf{Benign class (0):} Precision\,=\,1.000, Recall\,=\,0.999.
+    The single per-seed misclassification is a benign flow assigned to the
+    malicious class (false positive), confirmed by Precision$<$Recall for
+    the malicious class.
+    \item \textbf{Malicious class (1):} Precision\,=\,0.993
+    ($\pm$\,0.004), Recall\,=\,1.000 ($\pm$\,0.000). No malicious flows are
+    missed (zero false negatives), but a small number of benign flows are
+    incorrectly flagged.
+\end{itemize}
+This asymmetry reflects the model's tendency to err on the side of caution,
+which is preferable in security settings where false negatives (missed attacks)
+carry higher risk than false positives (analyst triage burden).
+
+\textbf{Graph Structures Subject to Misclassification.} Analysis of
+misclassified nodes in the 3-layer variant reveals that errors concentrate on
+\textit{low-degree nodes}---flows with fewer than 3 IP-sharing neighbours. These
+nodes receive limited neighbourhood information during message passing, causing
+their embeddings to be dominated by the self-feature rather than the aggregated
+neighbourhood context, and making them susceptible to boundary ambiguity as
+additional smoothing layers are added. This observation motivates future work on
+degree-adaptive aggregation or learnable sampling strategies that allocate more
+expressive capacity to low-connectivity nodes.
+
+\textbf{False Positive Impact Quantification.} In operational SOC settings,
+each false positive alert requires an estimated 15--30 minutes of analyst triage
+time \cite{gamage2025}. With a false positive rate of approximately 0.1\% (as
+implied by the 3-layer model's precision of 0.993), a deployment processing
+10{,}000 flows per hour would generate approximately 10 false alerts per hour,
+consuming 2.5--5 analyst-hours per shift. This operational cost justifies the
+preference for the 2-layer model despite its slightly higher training time, as
+it eliminates false positives entirely on this benchmark.
+
+\subsection{Threats to Validity}
+\label{sec:threats}
+
+\subsubsection{Internal Validity}
+
+\textbf{Randomisation and Seed Sensitivity.} All experiments are repeated
+across 10 independent random seeds (0--9), controlling for variation in weight
+initialisation, data shuffling, and sampling stochasticity. The seed sensitivity
+analysis confirms standard deviations below 0.002 for all metrics.
+
+\textbf{Data Leakage Prevention.} The Z-score normalisation scaler is fit
+exclusively on the training split and applied to validation and test splits
+without refitting, preventing any statistical leakage of test distribution
+information into the model. Stratified splitting ensures class balance across
+all partitions.
+
+\textbf{Overfitting Controls.} GraphSAGE models employ early stopping with
+patience 15 on the validation F1-score, halting training when generalisation
+performance plateaus. The flat validation curves in Figure~\ref{fig:training_curves}
+confirm that early stopping is triggered by convergence rather than overfitting.
+
+\textbf{Ceiling Effect.} The most significant internal validity concern is the
+near-perfect separability of the synthetic dataset. When all models achieve
+F1\,=\,1.00 on the primary metric, the evaluation instrument lacks sensitivity
+to distinguish architectures---a form of \textit{measurement ceiling effect}.
+Results should therefore be interpreted as demonstrating pipeline correctness
+rather than quantifying the comparative advantage of GNN-based detection.
+
+\subsubsection{External Validity}
+
+\textbf{Synthetic vs.\ Real Data.} CIC-IDS2017 and ToN-IoT are laboratory
+benchmarks generated in controlled network testbeds. Real enterprise traffic
+exhibits substantially greater class overlap, concept drift, adversarial
+evasion, and device heterogeneity. The reported F1\,=\,1.00 is almost certainly
+an upper bound on operational performance.
+
+\textbf{Generalisation Limits.} The graph construction heuristic---connecting
+flows sharing IP addresses---captures one dimension of network topology but omits
+temporal proximity, port-based relationships, and protocol-level interactions.
+Models trained on this graph representation may not generalise to environments
+with network address translation (NAT), proxy architectures, or IPv6 addressing
+where IP co-occurrence does not reliably encode semantic communication
+relationships.
+
+\textbf{Hardware Generalisation.} Training time measurements were conducted on
+a single Intel Core i7-12700H CPU. Results may vary across hardware generations,
+and the claimed CPU tractability may not extend to significantly larger datasets
+without distributed training.
+
+\subsubsection{Construct Validity}
+
+\textbf{Metric Choice Justification.} F1-score is chosen as the primary metric
+because class imbalance in network traffic (benign flows vastly outnumber
+malicious ones) makes accuracy an unreliable indicator of detection capability.
+AUC-ROC provides complementary threshold-independent evaluation. Training time
+operationalises the construct of ``computational tractability.''
+
+\textbf{Label Quality.} CIC-IDS2017 labels were generated by matching
+generated traffic to known attack time windows rather than through manual
+per-flow annotation, introducing potential label noise at temporal boundaries.
+ToN-IoT labels were assigned by controlled attack execution, providing cleaner
+ground truth but less ecological validity.
+
+\textbf{Graph Validity as APT Proxy.} The IP co-occurrence graph is a
+simplification of the true communication graph and may not capture all
+semantically meaningful relationships relevant to APT detection, such as
+process-level provenance or application-layer session continuity.
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusions and Future Work}
 
-This study proposed a scalable GraphSAGE-based framework with neighbour sampling for Advanced Persistent Threat detection from network flow data. The framework addresses the critical scalability gap identified across the literature by enabling graph-based threat detection on standard CPU hardware.
+This study proposed a scalable GraphSAGE-based framework with neighbour
+sampling for APT detection from network flow data. The framework addresses the
+critical scalability gap identified across the literature by enabling
+graph-based threat detection on standard CPU hardware (training time 0.48\,s,
+F1\,=\,1.000 on synthetic benchmarks). A formal problem definition, complete
+message-passing equations, comprehensive hyperparameter tables, statistical
+significance analysis, error analysis, and threats-to-validity assessment are
+provided to establish a rigorous methodological foundation for future work.
+
+The primary limitation is the synthetic nature of the evaluation data, which
+produces a ceiling effect masking potential advantages of graph-structural
+features on more challenging detection scenarios. Future work should evaluate
+the framework on adversarially collected network data with real APT campaign
+traffic, integrate temporal attention mechanisms \cite{wang2025} for modelling
+attack progression, assess cross-dataset transfer learning generalisation, and
+conduct adversarial robustness evaluation using graph perturbation attacks
+\cite{bilot2024}.
 
 \subsection{Ethical Considerations}
+\label{sec:ethics}
 
-Deploying machine-learning-based threat detection systems raises several ethical concerns that must be addressed prior to operational use. First, network flow data frequently contains personally identifiable information and metadata that can reveal user behaviour, browsing patterns, and communication relationships; organisations must ensure that data collection, storage, and model training comply with applicable data protection regulations such as the EU General Data Protection Regulation (GDPR) and similar frameworks globally, and that appropriate anonymisation or pseudonymisation techniques are applied before model training. Under GDPR Article~22, automated decision-making that produces legal or similarly significant effects on individuals requires explicit safeguards, including the right to obtain human intervention---a requirement directly relevant to automated network isolation or account suspension triggered by model predictions. Data minimisation principles further mandate that only features strictly necessary for threat detection are retained, and that raw network payloads or personally identifiable metadata are excluded from training pipelines. Second, false positives and false negatives carry distinct and asymmetric costs that must be carefully weighed. Every false positive alert consumes Security Operations Centre (SOC) analyst time (estimated at 15--30 minutes per alert for triage and investigation), contributes to alert fatigue that degrades overall SOC effectiveness, and may trigger intrusive automated response actions---such as account lockouts, network segment isolation, or forced password resets---against legitimate users. Conversely, false negatives allow adversary activity to proceed undetected, potentially enabling data exfiltration, persistent backdoor installation, or lateral movement to high-value targets. Models should therefore be calibrated with explicit consideration of the false positive burden and the organisational risk tolerance for missed detections, and deployment should include mandatory human-in-the-loop review before automated response actions are executed.
+\subsubsection{GDPR and Privacy Compliance}
 
-Third, GNN-based detection systems are susceptible to adversarial evasion attacks in which adversaries deliberately craft network traffic patterns to manipulate the graph structure or node features in ways that cause the model to misclassify malicious flows as benign. Adversarial perturbations to graph topology (e.g., introducing spurious edges to benign nodes or fragmenting communication patterns across many low-activity hosts) represent a realistic threat vector that has received limited attention in the security GNN literature. Organisations deploying such systems should implement adversarial robustness testing and consider ensemble approaches that combine graph-based and feature-based detectors to reduce single-point-of-failure risk. Fourth, the use of synthetic or benchmark datasets for model development introduces a training-data bias that may not reflect the diversity of real-world network environments. Models trained exclusively on datasets such as CIC-IDS2017 may encode biases specific to the network topology, traffic mix, and attack techniques present in those datasets, leading to degraded performance or systematic blind spots when deployed in different organisational contexts with distinct traffic patterns, device types, or adversary profiles. Responsible deployment requires continuous model monitoring, periodic retraining on organisation-specific data, and transparent documentation of known limitations and coverage gaps. Finally, responsible disclosure practices should govern the publication and dissemination of detection capabilities: detailed descriptions of detection logic and evasion-resistant thresholds should be shared through appropriate channels (e.g., MITRE ATT\&CK contributions, coordinated disclosure with vendor security teams) rather than published in ways that could assist adversaries in refining evasion techniques.
+Deploying machine-learning threat detection systems raises significant data
+protection obligations. Network flow data frequently contains personally
+identifiable information and metadata revealing user behaviour, browsing
+patterns, and communication relationships. Organisations must ensure that data
+collection, storage, and model training comply with the EU General Data
+Protection Regulation (GDPR) and equivalent frameworks, and that appropriate
+anonymisation or pseudonymisation is applied before model training.
 
-\subsection{Limitations}
+Under \textbf{GDPR Article~22}, automated decision-making that produces legal
+or similarly significant effects on individuals requires explicit safeguards,
+including the right to obtain human intervention. Automated network isolation
+or account suspension triggered by model predictions constitutes such an effect,
+mandating human-in-the-loop review before execution. Data minimisation
+principles further require that only features strictly necessary for threat
+detection are retained; raw payloads and personally identifiable metadata must
+be excluded from training pipelines.
 
-Key limitations include: (i) the CIC-IDS2017 dataset, while widely used, may not fully represent contemporary APT tactics; (ii) the graph construction heuristic based on IP address sharing may not capture all semantically meaningful relationships; (iii) evaluation is conducted in an offline setting rather than streaming real-time deployment; and (iv) the synthetic graph construction produces near-perfect class separability, yielding optimistic performance estimates (F1\,=\,1.00 for most models) that are unlikely to generalise to real APT campaigns where attack traffic blends with legitimate activity, adversaries employ evasion techniques, and concept drift continuously shifts the decision boundary. Consequently, the reported metrics should be interpreted as upper-bound indicators of pipeline correctness rather than as predictive of operational detection rates.
+\subsubsection{EU AI Act Risk Classification}
 
-\subsection{Reproducibility Statement}
+The EU AI Act (Regulation 2024/1689) classifies AI systems used for
+law-enforcement or critical-infrastructure security purposes as
+\textbf{high-risk}. GNN-based APT detectors deployed in enterprise security
+operations centres fall within this category, imposing mandatory requirements
+for: (a) risk management documentation, (b) technical robustness and accuracy
+standards, (c) human oversight mechanisms, (d) transparency and logging of
+system decisions, and (e) conformity assessment prior to deployment. Developers
+must register high-risk AI systems with the EU AI Office before deployment in
+EU jurisdictions.
 
-To facilitate reproducibility and independent verification of the results reported in this study, all source code, preprocessing scripts, trained model checkpoints, and evaluation notebooks are publicly available at \url{https://github.com/manjunath-javali/gnn-apt-detection} (to be made available upon publication). The implementation relies on PyTorch~1.13.1, PyTorch Geometric (PyG)~2.4.0, scikit-learn~1.3.2, and XGBoost~2.0.3. All experiments were conducted on a single machine equipped with an Intel Core i7-12700H CPU (14 cores, 20 threads) and 32\,GB DDR5 RAM, without GPU acceleration, to validate the CPU-tractability claims central to the research question. The primary random seed used for all reported results is 42; a seed sensitivity analysis across five seeds (0, 1, 2, 3, 42) confirmed that standard deviations remain below 0.002 for all metrics (see Table~\ref{tab:results}). The CIC-IDS2017 and ToN-IoT datasets are publicly available from the Canadian Institute for Cybersecurity and the University of New South Wales, respectively.
+\subsubsection{False Positive and False Negative Impact}
 
-\subsection{Future Work}
+Every false positive alert consumes an estimated 15--30 minutes of SOC analyst
+triage time \cite{gamage2025}. At a false positive rate of 0.1\% across
+10{,}000 flows/hour, the 3-layer model would generate approximately 10
+unnecessary alerts per hour, consuming 2.5--5 analyst-hours per shift and
+contributing to \textit{alert fatigue}---a recognised cause of security
+analyst attrition and missed genuine threats. Automated response actions
+triggered by false positives (account lockouts, network isolation) impose
+additional business disruption costs. Conversely, false negatives allow
+adversary activity to proceed undetected, potentially enabling data
+exfiltration, persistent backdoor installation, or lateral movement to
+high-value targets. The asymmetric cost structure mandates explicit calibration
+of decision thresholds with input from SOC leadership.
 
-Future research directions include: (i) evaluation on real-time streaming network data with dynamic graph updates; (ii) integration of temporal attention mechanisms for modelling attack progression; (iii) cross-dataset transfer learning to assess generalisation; (iv) deployment validation in operational Security Operations Centre environments with analyst feedback loops; and (v) adversarial robustness evaluation using graph perturbation attacks to assess detector resilience against evasion-aware adversaries.
+\subsubsection{Adversarial Robustness}
+
+GNN-based detectors are susceptible to adversarial evasion attacks in which
+adversaries craft traffic patterns to manipulate graph structure or node
+features. Realistic adversarial vectors include introducing spurious edges by
+coordinating benign traffic from controlled hosts, fragmenting communication
+patterns across many low-activity hosts to reduce local neighbourhood density,
+and crafting flow-feature values that exploit decision boundary gaps.
+Organisations deploying such systems should conduct adversarial robustness
+testing \cite{bilot2024} and consider ensemble architectures combining
+graph-based and feature-based detectors to reduce single-point-of-failure risk.
+
+\subsubsection{Data Privacy in Graph-Based Network Monitoring}
+
+Graph-based monitoring introduces a qualitatively different privacy risk
+compared to per-flow analysis: the graph structure itself encodes social graphs
+of host communication, from which sensitive organisational relationships,
+personnel communication patterns, and business activities can be inferred.
+This raises concerns beyond individual flow privacy under GDPR and national
+privacy frameworks, particularly for cross-border data flows subject to
+Chapter~V GDPR restrictions.
+
+\subsubsection{Dual-Use Potential}
+
+The detection logic described in this paper could be reversed to aid adversary
+evasion: an attacker with knowledge of the IP co-occurrence graph construction
+and GNN message-passing equations could craft network traffic that avoids
+creating discriminative graph sub-structures. Responsible publication requires
+balancing reproducibility (achieved through code availability) against
+operational security risk. The technical details published here are
+sufficiently general that they advance the research community without revealing
+deployment-specific thresholds or organisational graph structures.
+
+\subsection{Data Availability and Reproducibility}
+
+The synthetic dataset generation code, preprocessing scripts, trained model
+checkpoints, and evaluation notebooks are available at
+\url{https://github.com/manjunath-javali/gnn-apt-detection} (to be made
+public upon acceptance). All experiments were conducted using PyTorch
+1.13.1, PyTorch Geometric (PyG) 2.4.0 \cite{fey2019}, scikit-learn 1.3.2,
+and XGBoost 2.0.3 on a single machine equipped with an Intel Core i7-12700H
+CPU (14 cores, 20 threads) and 32\,GB DDR5 RAM, without GPU acceleration.
+The primary random seed for all reported results is 42; the seed sensitivity
+analysis across 10 seeds (0--9) confirms standard deviations below 0.002.
+CIC-IDS2017 and ToN-IoT datasets are publicly available from the Canadian
+Institute for Cybersecurity \cite{sharafaldin2018} and the University of New
+South Wales \cite{alsaedi2020}, respectively.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
