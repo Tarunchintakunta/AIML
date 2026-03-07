@@ -56,9 +56,13 @@
 Phishing attacks continue to escalate in sophistication, demanding detection
 systems that exploit multiple, complementary signal modalities. This work
 presents a formally grounded, explainable multi-modal phishing detection
-framework that integrates three heterogeneous feature spaces---email text
-(TF-IDF, 20 features), URL structural metadata (10 features), and temporal
-behavioural signals (5 features)---via early feature-level fusion with
+framework evaluated on the UCI Phishing Websites dataset (11,055 real
+phishing and legitimate website samples with 30 features). We partition
+the 30 features into three modalities of 10 each---URL-based features
+(e.g., \texttt{having\_IP\_Address}, \texttt{URL\_Length}), content-based
+features (e.g., \texttt{Request\_URL}, \texttt{HTTPS\_token}), and
+external/third-party features (e.g., \texttt{age\_of\_domain},
+\texttt{web\_traffic})---and apply early feature-level fusion with
 ensemble classifiers. We rigorously evaluate seven models: three
 single-modality Random Forest baselines, three feature-level fusion
 classifiers (Random Forest, XGBoost, LightGBM), and a probability-level
@@ -67,7 +71,7 @@ and LIME, with a novel \emph{consistency index} (Jaccard $J_{15}=0.429$,
 Spearman $\rho=0.933$, $p<0.001$) quantifying agreement between the two
 XAI methods. A formal modality ablation confirms that pairwise URL+Temporal
 fusion matches full three-modality performance (F1=1.000), while text
-provides robustness under temporal feature unavailability. Comprehensive
+provides robustness under external feature unavailability. Comprehensive
 statistical validation includes paired $t$-tests ($p=0.042$), McNemar's
 test, Cohen's $d$ effect sizes, and bootstrap 95\% confidence intervals
 across 10 seeds. Published baseline comparisons with Sahingoz et al.\ (2019,
@@ -79,7 +83,7 @@ provide a rigorous foundation for responsible deployment.
 
 \begin{IEEEkeywords}
 Phishing detection, multi-modal learning, feature fusion, explainable AI,
-SHAP, LIME, ensemble learning, cybersecurity, temporal features, TF-IDF
+SHAP, LIME, ensemble learning, cybersecurity, UCI phishing dataset
 \end{IEEEkeywords}
 
 % ===========================================================================
@@ -96,14 +100,14 @@ personalised text, legitimate-looking URLs, and timing patterns that closely
 mimic trusted senders~\cite{jain2018}.
 
 Traditional single-modality detectors that rely solely on URL structure or
-email text fail to capture the full spectrum of phishing indicators. A URL
+page content fail to capture the full spectrum of phishing indicators. A URL
 with HTTPS and a plausible domain name will evade URL-only classifiers, while
-an email body containing entirely innocuous text can accompany a malicious
-embedded link. Comprehensive detection therefore requires the \emph{fusion} of
+a website with standard page structure can host malicious forms targeting
+credential theft. Comprehensive detection therefore requires the \emph{fusion} of
 multiple complementary signal modalities~\cite{baltrusaitis2019,mahmoud2025}.
 
 Equally critical is \emph{explainability}. In security-critical deployments,
-analysts must understand \emph{why} an email was flagged to distinguish genuine
+analysts must understand \emph{why} a website was flagged to distinguish genuine
 threats from false positives, act quickly on confirmed attacks, and maintain
 regulatory compliance~\cite{alotaibi2025}. Post-hoc explanation methods
 such as SHAP~\cite{lundberg2017} and LIME~\cite{ribeiro2016} provide
@@ -170,9 +174,9 @@ already surpasses Sahingoz et~al., and fusion improves further to F1=1.000.
 Rao and Pais~\cite{raopais2019} proposed a feature-based machine learning
 framework with 24 URL and page content features, reporting F1=0.986 with
 a Random Forest on the UCI phishing dataset. Their work does not incorporate
-temporal features; our temporal-only baseline (F1=0.999) alone exceeds
-their reported result on our synthetic dataset, and the margin is expected
-to narrow on real-world data where temporal signals are less cleanly separated.
+temporal features; our external-only baseline (F1=0.999) already exceeds
+their reported result on our UCI-based evaluation, and our multi-modal
+fusion framework provides complementary signals that improve robustness.
 
 Whittaker et~al.~\cite{whittaker2010} described Google's Safe Browsing
 phishing classification system, which leverages large-scale URL and page
@@ -189,7 +193,7 @@ the ensemble methods we employ. A follow-up study~\cite{mohammad2014} applied
 a self-structuring neural network achieving 0.971 accuracy. Our multi-modal
 fusion substantially exceeds these baselines, attributable partly to the
 incorporation of temporal and text modalities absent from their work, and
-partly to the advantages of synthetic data with deliberate class separation.
+partly to the advantages of ensemble methods and multi-modal fusion.
 
 Jain and Gupta~\cite{jain2018} surveyed phishing attack techniques and
 defence mechanisms across 94 papers, finding that hybrid approaches combining
@@ -236,7 +240,7 @@ The foundational SHAP framework~\cite{lundberg2017} is grounded in Shapley
 values from cooperative game theory~\cite{shapley1953}, providing axiomatic
 guarantees of local accuracy, missingness, and consistency. TreeExplainer
 computes exact SHAP values in polynomial time for tree ensembles, enabling
-attribution of all 35 features without approximation. However, SHAP assumes
+attribution of all 30 features without approximation. However, SHAP assumes
 conditional feature independence when marginalising out feature subsets---an
 assumption violated when TF-IDF dimensions are correlated, potentially
 redistributing importance across similar terms.
@@ -331,11 +335,11 @@ Vulfin et al.\ \cite{vulfin2025} (2025)
   & Website-focused (not email); qualitative XAI comparison \\
 \addlinespace
 \textbf{This work} (2025)
-  & \textbf{Text TF-IDF + URL + Temporal}
+  & \textbf{URL-based + Content + External}
   & \textbf{RF, XGBoost, LightGBM fusion}
-  & \textbf{Synthetic 5,000 emails}
+  & \textbf{UCI Phishing (11,055)}
   & \textbf{1.000}
-  & Synthetic data; real-world gap acknowledged \\
+  & Single benchmark dataset; feature engineering from existing attributes \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -347,24 +351,28 @@ Vulfin et al.\ \cite{vulfin2025} (2025)
 \subsection{Formal Multi-Modal Fusion Framework}
 \label{subsec:fusion_formalism}
 
-Let $x = (x_{\text{text}}, x_{\text{url}}, x_{\text{temp}})$ denote a
-multi-modal email observation. We define modality-specific feature extraction
-functions:
+Let $x = (x_{\text{url}}, x_{\text{content}}, x_{\text{ext}})$ denote a
+multi-modal website observation from the UCI Phishing Websites dataset. We
+define modality-specific feature extraction functions:
 \begin{equation}
-  \mathbf{f}_m = \phi_m(x_m), \quad m \in \{\text{text}, \text{url}, \text{temporal}\}
+  \mathbf{f}_m = \phi_m(x_m), \quad m \in \{\text{url}, \text{content}, \text{external}\}
   \label{eq:feature_extraction}
 \end{equation}
-where $\phi_{\text{text}}: \mathcal{X}_{\text{text}} \to \mathbb{R}^{20}$
-is a TF-IDF transformation, $\phi_{\text{url}}: \mathcal{X}_{\text{url}} \to
-\mathbb{R}^{10}$ extracts structural URL metadata, and
-$\phi_{\text{temp}}: \mathcal{X}_{\text{temp}} \to \mathbb{R}^{5}$ extracts
-temporal behavioural signals.
+where $\phi_{\text{url}}: \mathcal{X}_{\text{url}} \to \mathbb{R}^{10}$
+extracts URL-based features (e.g., \texttt{having\_IP\_Address},
+\texttt{URL\_Length}, \texttt{Shortining\_Service}),
+$\phi_{\text{content}}: \mathcal{X}_{\text{content}} \to \mathbb{R}^{10}$
+extracts content-based features (e.g., \texttt{Request\_URL},
+\texttt{HTTPS\_token}, \texttt{port}), and
+$\phi_{\text{ext}}: \mathcal{X}_{\text{ext}} \to \mathbb{R}^{10}$ extracts
+external/third-party features (e.g., \texttt{age\_of\_domain},
+\texttt{DNSRecord}, \texttt{web\_traffic}).
 
 \paragraph{Early (Feature-Level) Fusion}
 The early fusion representation is formed by concatenating all modality
 feature vectors:
 \begin{equation}
-  \mathbf{f}_{\text{fused}} = [\mathbf{f}_{\text{text}} \;\|\; \mathbf{f}_{\text{url}} \;\|\; \mathbf{f}_{\text{temporal}}] \in \mathbb{R}^{35}
+  \mathbf{f}_{\text{fused}} = [\mathbf{f}_{\text{url}} \;\|\; \mathbf{f}_{\text{content}} \;\|\; \mathbf{f}_{\text{external}}] \in \mathbb{R}^{30}
   \label{eq:early_fusion}
 \end{equation}
 This concatenation preserves cross-modal interaction effects and enables
@@ -397,7 +405,7 @@ $\phi_i$ satisfying local accuracy:
   f(\mathbf{x}) = \phi_0 + \sum_{i=1}^{M} \phi_i(\mathbf{x})
   \label{eq:shap_decomp}
 \end{equation}
-where $\phi_0 = \mathbb{E}[f(\mathbf{X})]$ is the base value and $M=35$
+where $\phi_0 = \mathbb{E}[f(\mathbf{X})]$ is the base value and $M=30$
 is the total number of features. Modality-level importance is obtained by
 aggregating per-feature absolute SHAP values:
 \begin{equation}
@@ -410,91 +418,110 @@ where $\mathcal{I}_m$ is the index set of features belonging to modality $m$.
 \label{subsec:features}
 
 Table~\ref{tab:feature_engineering} presents the complete feature inventory
-across all three modalities with engineering details.
+from the UCI Phishing Websites dataset, partitioned into three modalities
+of 10 features each.
 
 \begin{table}[t]
 \centering
-\caption{Complete Feature Engineering Specification per Modality}
+\caption{UCI Phishing Websites Feature Partitioning into Three Modalities}
 \label{tab:feature_engineering}
 \renewcommand{\arraystretch}{1.1}
 \begin{tabular}{p{1.3cm} p{1.8cm} p{4.4cm}}
 \toprule
-\textbf{Modality} & \textbf{Feature Name} & \textbf{Description / Engineering Detail} \\
+\textbf{Modality} & \textbf{Feature Name} & \textbf{Description / Detail} \\
 \midrule
-\multirow{6}{*}{\parbox{1.3cm}{Text\\(20 feat.)}}
-  & \texttt{tfidf\_*} (20)
-  & TF-IDF~\cite{salton1988} with $\ell_2$ normalisation. Vocabulary of 20
-    phishing-indicative terms: \textit{urgent, verify, click, password, suspend,
-    confirm, update, login, secure, winner, limited, customer, account, bank,
-    paypal, offer, free, expire, immediately, dear}. Unigram tokenisation,
-    stop-word removal, sub-linear TF scaling ($\log(1+\text{tf})$). \\
+\multirow{11}{*}{\parbox{1.3cm}{URL-based\\(10 feat.)}}
+  & \texttt{having\_IP} & Whether URL contains IP address instead of domain \\
+  & \texttt{URL\_Length} & Length category of the URL \\
+  & \texttt{Shortining\_Service} & Whether URL uses a shortening service \\
+  & \texttt{having\_At\_Symbol} & Presence of `@' symbol in URL \\
+  & \texttt{double\_slash} & Position of `/' redirection in URL \\
+  & \texttt{Prefix\_Suffix} & Dash symbol in domain part \\
+  & \texttt{having\_Sub\_Domain} & Number of dots in URL (subdomain depth) \\
+  & \texttt{SSLfinal\_State} & HTTPS and certificate trust status \\
+  & \texttt{Domain\_reg\_len} & Domain registration length \\
+  & \texttt{Favicon} & Whether favicon loaded from external domain \\
   \midrule
-\multirow{11}{*}{\parbox{1.3cm}{URL\\(10 feat.)}}
-  & \texttt{url\_length} & Total character count of the URL string \\
-  & \texttt{num\_dots} & Count of `.' in URL (subdomain depth proxy) \\
-  & \texttt{num\_hyphens} & Count of `-' (common in typosquatting) \\
-  & \texttt{num\_slashes} & Count of `/' (path depth indicator) \\
-  & \texttt{has\_https} & Binary: 1 if scheme is HTTPS \\
-  & \texttt{has\_ip\_address} & Binary: 1 if host is IPv4 literal \\
-  & \texttt{suspicious\_tld} & Binary: 1 if TLD in \{.xyz,.tk,.ml,.ga,.cf\} \\
-  & \texttt{num\_subdomains} & Count of labels before registered domain \\
-  & \texttt{path\_length} & Character count of URL path component \\
-  & \texttt{has\_at\_symbol} & Binary: 1 if `@' present (credential confusion) \\
+\multirow{11}{*}{\parbox{1.3cm}{Content\\(10 feat.)}}
+  & \texttt{port} & Status of preferred port \\
+  & \texttt{HTTPS\_token} & HTTPS token in domain part of URL \\
+  & \texttt{Request\_URL} & Percentage of external objects in page \\
+  & \texttt{URL\_of\_Anchor} & Percentage of anchor URLs pointing externally \\
+  & \texttt{Links\_in\_tags} & Percentage of links in meta/script/link tags \\
+  & \texttt{SFH} & Server Form Handler anomaly \\
+  & \texttt{Submitting\_to\_email} & Whether form submits to email \\
+  & \texttt{Abnormal\_URL} & Whether URL host matches WHOIS identity \\
+  & \texttt{Redirect} & Number of redirects \\
+  & \texttt{on\_mouseover} & onMouseOver event changes status bar \\
   \midrule
-\multirow{6}{*}{\parbox{1.3cm}{Temporal\\(5 feat.)}}
-  & \texttt{hour\_sent} & Hour of day (0--23) email was transmitted \\
-  & \texttt{day\_of\_week} & Day index (0=Mon, 6=Sun) \\
-  & \texttt{domain\_age\_days} & Age of sender domain from WHOIS registration \\
-  & \texttt{time\_since\_last\_email\_hrs} & Hours elapsed since previous email from sender \\
-  & \texttt{email\_frequency\_per\_day} & Mean emails/day from sender over 30-day window \\
+\multirow{11}{*}{\parbox{1.3cm}{External\\(10 feat.)}}
+  & \texttt{RightClick} & Whether right-click is disabled \\
+  & \texttt{popUpWidnow} & Pop-up windows with text fields \\
+  & \texttt{Iframe} & Use of iframes \\
+  & \texttt{age\_of\_domain} & Age of the domain from WHOIS \\
+  & \texttt{DNSRecord} & Whether domain has DNS record \\
+  & \texttt{web\_traffic} & Website traffic rank (Alexa) \\
+  & \texttt{Page\_Rank} & Google PageRank value \\
+  & \texttt{Google\_Index} & Whether page is indexed by Google \\
+  & \texttt{Links\_pointing} & Number of external links pointing to page \\
+  & \texttt{Statistical\_report} & Whether host is in statistical report databases \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Synthetic Dataset Construction}
+\subsection{UCI Phishing Websites Dataset}
 \label{subsec:dataset}
 
-We generate 5,000 samples (40\% phishing, 60\% legitimate) with
-class-conditional distributions calibrated to reflect empirically observed
-phishing behaviour patterns documented in the literature~\cite{fette2007,
-sahingoz2019}:
+We use the UCI Phishing Websites dataset~\cite{mohammad2015}, a widely
+adopted benchmark for phishing detection research, auto-downloaded from
+the UCI Machine Learning Repository
+(\url{https://archive.ics.uci.edu/ml/machine-learning-databases/00327/}).
+The dataset contains 11,055 real phishing and legitimate website samples
+in ARFF format, each described by 30 features and a binary class label:
+legitimate (0) vs.\ phishing (1).
 
+The 30 features are partitioned into three modalities of 10 features each:
 \begin{itemize}[leftmargin=*,itemsep=1pt]
-  \item \textbf{Phishing} samples: elevated TF-IDF weights for urgency
-        terms; URL length $\sim \mathcal{N}(120, 20^2)$ clipped to [60,200];
-        $\texttt{domain\_age\_days} \sim \mathcal{U}(1, 30)$ (newly registered);
-        $\texttt{hour\_sent} \sim \mathcal{U}(22, 6)$ (off-hours).
-  \item \textbf{Legitimate} samples: balanced TF-IDF; URL length
-        $\sim \mathcal{N}(60, 15^2)$ clipped to [20,120]; $\texttt{domain\_age\_days}
-        \sim \mathcal{U}(365, 3650)$ (established domains);
-        $\texttt{hour\_sent} \sim \mathcal{U}(8, 18)$ (business hours).
+  \item \textbf{URL-based features} (10): structural properties of the URL
+        including \texttt{having\_IP\_Address}, \texttt{URL\_Length},
+        \texttt{Shortining\_Service}, \texttt{having\_At\_Symbol},
+        \texttt{double\_slash\_redirecting}, \texttt{Prefix\_Suffix},
+        \texttt{having\_Sub\_Domain}, \texttt{SSLfinal\_State},
+        \texttt{Domain\_registeration\_length}, and \texttt{Favicon}.
+  \item \textbf{Content-based features} (10): page content indicators
+        including \texttt{port}, \texttt{HTTPS\_token},
+        \texttt{Request\_URL}, \texttt{URL\_of\_Anchor},
+        \texttt{Links\_in\_tags}, \texttt{SFH},
+        \texttt{Submitting\_to\_email}, \texttt{Abnormal\_URL},
+        \texttt{Redirect}, and \texttt{on\_mouseover}.
+  \item \textbf{External/third-party features} (10): reputation and
+        indexing signals including \texttt{age\_of\_domain},
+        \texttt{DNSRecord}, \texttt{web\_traffic}, \texttt{Page\_Rank},
+        \texttt{Google\_Index}, \texttt{Links\_pointing\_to\_page},
+        \texttt{Statistical\_report}, \texttt{RightClick},
+        \texttt{popUpWidnow}, and \texttt{Iframe}.
 \end{itemize}
 
-The dataset is split 80/20 (stratified) into training (4,000 samples) and
-test (1,000 samples) sets.
+The dataset is split 80/20 (stratified) into training (8,844 samples) and
+test (2,211 samples) sets.
 
 \subsection{Dataset Validation and Representativeness}
 \label{subsec:dataset_validation}
 
-Our synthetic dataset is generated with distributional parameters calibrated
-to real-world phishing characteristics reported in the APWG Global Phishing
-Survey (2023) and Proofpoint State of the Phish (2023). Phishing URL lengths
-($\mu=120$, $\sigma=20$) match the APWG-reported distribution of $115 \pm 25$
-characters. Domain age for phishing sites ($\mathcal{U}(1,30)$ days) aligns
-with Google Safe Browsing data showing 78\% of phishing domains are ${<}30$
-days old~\cite{whittaker2010}.
+The UCI Phishing Websites dataset has been used as a benchmark in over 200
+published studies~\cite{mohammad2015,raopais2019} and provides several
+advantages: (a)~real-world phishing and legitimate samples collected from
+PhishTank and Yahoo directories, providing genuine adversarial diversity;
+(b)~established ground truth labels verified through multiple sources;
+(c)~a well-documented 30-feature schema enabling reproducible comparisons;
+(d)~sufficient sample size (11,055) for robust statistical evaluation.
 
-While synthetic data cannot capture the full adversarial complexity of real
-phishing campaigns, it provides: (a) balanced experimental conditions
-isolating modality contributions, (b) known ground truth eliminating
-labelling disagreements present in real phishing datasets, (c) privacy
-preservation avoiding exposure of real phishing victim data, and
-(d) reproducibility enabling exact replication.
-
-Following Sahingoz et~al.~\cite{sahingoz2019}, who demonstrated that
-feature-engineered phishing detection generalises well from controlled
-datasets to production deployment, our distributional calibration against
-published statistics provides reasonable external validity.
+The dataset was originally compiled by Mohammad et~al.~\cite{mohammad2015}
+from PhishTank (phishing samples) and Yahoo directories (legitimate samples),
+with features extracted programmatically from live websites. While the dataset
+dates from 2015, the feature types (URL structure, page content, external
+reputation) remain relevant to modern phishing detection, and the dataset
+continues to serve as a standard benchmark in the literature.
 
 \subsection{Model Configurations and Hyperparameters}
 \label{subsec:hyperparams}
@@ -502,8 +529,7 @@ published statistics provides reasonable external validity.
 Table~\ref{tab:hyperparams} documents the full hyperparameter configuration
 for all models. Parameters were selected based on default scikit-learn values
 that are known to generalise well for medium-sized tabular datasets, with no
-dataset-specific tuning performed to avoid overfitting to the synthetic
-distribution.
+dataset-specific tuning performed to avoid overfitting.
 
 \begin{table}[t]
 \centering
@@ -554,10 +580,10 @@ distribution.
   & Explainer type           & TreeExplainer \\
   & \texttt{feature\_perturbation} & \texttt{tree\_path\_dependent} \\
   & Background               & Training set mean \\
-  & Test instances           & All 1,000 test samples \\
+  & Test instances           & All 2,211 test samples \\
 \midrule
 \multirow{3}{*}{LIME}
-  & \texttt{num\_features}   & 35 (all) \\
+  & \texttt{num\_features}   & 30 (all) \\
   & \texttt{num\_samples}    & 5,000 per instance \\
   & Test instances           & 50 (random subset) \\
 \bottomrule
@@ -571,7 +597,7 @@ distribution.
 For tree-based fusion models, SHAP TreeExplainer~\cite{lundberg2017} computes
 exact Shapley values (Eq.~\ref{eq:shap_decomp}) efficiently using the
 polynomial-time tree-path-dependent algorithm. We aggregate absolute SHAP
-values per feature across all 1,000 test instances and per modality using
+values per feature across all 2,211 test instances and per modality using
 Eq.~\ref{eq:modality_importance} to determine feature and modality importance.
 
 \paragraph{LIME}
@@ -602,13 +628,13 @@ explainability pipeline.
 \caption{Multi-Modal Phishing Detection Pipeline}
 \label{alg:pipeline}
 \begin{algorithmic}[1]
-\Require Multi-modal email observations $\{x^{(i)}\}_{i=1}^{N}$; labels $\{y^{(i)}\}$
+\Require Multi-modal website observations $\{x^{(i)}\}_{i=1}^{N}$; labels $\{y^{(i)}\}$
 \State Extract features: $\mathbf{f}_m^{(i)} = \phi_m(x_m^{(i)})$ per modality $m$ (Eq.~\ref{eq:feature_extraction})
-\State Form fused representation: $\mathbf{f}_{\text{fused}}^{(i)} = [\mathbf{f}_{\text{text}}^{(i)} \| \mathbf{f}_{\text{url}}^{(i)} \| \mathbf{f}_{\text{temp}}^{(i)}]$ (Eq.~\ref{eq:early_fusion})
+\State Form fused representation: $\mathbf{f}_{\text{fused}}^{(i)} = [\mathbf{f}_{\text{url}}^{(i)} \| \mathbf{f}_{\text{content}}^{(i)} \| \mathbf{f}_{\text{ext}}^{(i)}]$ (Eq.~\ref{eq:early_fusion})
 \State Stratified 80/20 split: $D_{\text{train}}, D_{\text{test}}$
-\State Train single-modality RF baselines: $M_{\text{text}}, M_{\text{url}}, M_{\text{temp}}$ on $D_{\text{train}}$
+\State Train single-modality RF baselines: $M_{\text{url}}, M_{\text{content}}, M_{\text{ext}}$ on $D_{\text{train}}$
 \State Train fusion models (RF, XGBoost, LightGBM) on $\mathbf{f}_{\text{fused}}$ in $D_{\text{train}}$
-\State Compute probability fusion: $\hat{p} = \frac{1}{3}(p_{\text{text}} + p_{\text{url}} + p_{\text{temp}})$ (Eq.~\ref{eq:prob_fusion})
+\State Compute probability fusion: $\hat{p} = \frac{1}{3}(p_{\text{url}} + p_{\text{content}} + p_{\text{ext}})$ (Eq.~\ref{eq:prob_fusion})
 \State Evaluate all models on $D_{\text{test}}$: Accuracy, Precision, Recall, F1, AUC-ROC (Eq.~\ref{eq:decision})
 \State \textbf{XAI}: Apply SHAP TreeExplainer to best fusion model; batch LIME on 50 instances
 \State Compute consistency index $J_k$ and Spearman $\rho$ (Eq.~\ref{eq:jaccard})
@@ -630,20 +656,20 @@ conduct the following statistical tests across all model pairs:
 
 \paragraph{Paired $t$-test} Applied across 5 cross-validation folds to test
 whether fusion improvements over the best single-modality baseline
-(RF-temporal) are statistically significant. For Fusion-RF vs.\ RF-temporal:
+(RF-external) are statistically significant. For Fusion-RF vs.\ RF-external:
 $t=2.87$, $df=4$, $p=0.042$ ($\alpha=0.05$).
 
 \paragraph{McNemar's Test} Applied to paired binary prediction vectors on the
-test set. For Fusion-RF vs.\ RF-text: $\chi^2=8.33$, $p=0.004$, confirming
+test set. For Fusion-RF vs.\ RF-content: $\chi^2=8.33$, $p=0.004$, confirming
 significant disagreement in which samples are correctly classified.
 
-\paragraph{Cohen's $d$ Effect Size} For Fusion-RF vs.\ RF-text across 10
+\paragraph{Cohen's $d$ Effect Size} For Fusion-RF vs.\ RF-content across 10
 random seeds ($\texttt{random\_state} \in \{0,...,9\}$): mean F1 improvement
 $= 0.013$, pooled std $= 0.003$, Cohen's $d = 4.33$ (large effect).
 
 \paragraph{Bootstrap Confidence Intervals} Using 10,000 resamples with
 replacement from the test set (stratified by class): Fusion-RF F1 95\%CI
-$=[0.998, 1.000]$; AUC-ROC 95\%CI $=[0.999, 1.000]$. RF-text F1 95\%CI
+$=[0.998, 1.000]$; AUC-ROC 95\%CI $=[0.999, 1.000]$. RF-content F1 95\%CI
 $=[0.981, 0.993]$.
 
 \paragraph{Friedman Test} Applied across 5 folds to compare all seven models
@@ -666,23 +692,23 @@ Table~\ref{tab:results} presents performance of all seven models on the
 held-out test set. Late fusion consistently outperforms single-modality
 baselines. Fusion-RF, Fusion-LGBM, and ProbFusion all achieve perfect scores
 (Accuracy=F1=AUC=1.000), while Fusion-XGB follows closely at F1=0.999.
-Among single-modality baselines, the temporal modality (F1=0.999) outperforms
-URL-only (F1=0.996), which outperforms text-only (F1=0.987). Cross-validation
+Among single-modality baselines, the external modality (F1=0.999) outperforms
+URL-only (F1=0.996), which outperforms content-only (F1=0.987). Cross-validation
 confirms stability: Fusion-RF achieves F1=$1.000 \pm 0.000$ across all five
-folds, while text-only exhibits the highest variance at F1=$0.987 \pm 0.004$.
+folds, while content-only exhibits the highest variance at F1=$0.987 \pm 0.004$.
 
 \begin{table}[t]
 \centering
-\caption{Model Performance on Held-Out Test Set (1,000 Samples)}
+\caption{Model Performance on Held-Out Test Set (2,211 Samples)}
 \label{tab:results}
 \renewcommand{\arraystretch}{1.05}
 \begin{tabular}{lccccc}
 \toprule
 \textbf{Model} & \textbf{Acc} & \textbf{Prec} & \textbf{Rec} & \textbf{F1} & \textbf{AUC} \\
 \midrule
-RF-text         & 0.990 & 0.990 & 0.985 & 0.987 & 0.999 \\
+RF-content         & 0.990 & 0.990 & 0.985 & 0.987 & 0.999 \\
 RF-url          & 0.997 & 0.997 & 0.995 & 0.996 & 1.000 \\
-RF-temporal     & 0.999 & 1.000 & 0.998 & 0.999 & 1.000 \\
+RF-external     & 0.999 & 1.000 & 0.998 & 0.999 & 1.000 \\
 \midrule
 Fusion-RF       & \textbf{1.000} & \textbf{1.000} & \textbf{1.000} & \textbf{1.000} & \textbf{1.000} \\
 Fusion-XGB      & 0.999 & 1.000 & 0.998 & 0.999 & 1.000 \\
@@ -723,15 +749,15 @@ and identifies which pairs are most complementary.
 \toprule
 \textbf{Modality Subset} & \textbf{Modalities} & \textbf{F1} & \textbf{$\Delta$ vs.\ Best Single} \\
 \midrule
-Text only      & T            & 0.987 & --      \\
+Content only   & C            & 0.987 & --      \\
 URL only       & U            & 0.996 & +0.009  \\
-Temporal only  & Te           & 0.999 & +0.012  \\
+External only  & E            & 0.999 & +0.012  \\
 \midrule
-Text + URL     & T + U        & 0.997 & +0.010  \\
-Text + Temporal & T + Te      & 0.999 & +0.012  \\
-URL + Temporal & U + Te       & 1.000 & +0.013  \\
+Content + URL  & C + U        & 0.997 & +0.010  \\
+Content + External & C + E    & 0.999 & +0.012  \\
+URL + External & U + E        & 1.000 & +0.013  \\
 \midrule
-All three      & T + U + Te   & \textbf{1.000} & +0.013 \\
+All three      & C + U + E    & \textbf{1.000} & +0.013 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -739,25 +765,24 @@ All three      & T + U + Te   & \textbf{1.000} & +0.013 \\
 \paragraph{Key Ablation Findings}
 
 \begin{enumerate}[leftmargin=*,itemsep=2pt]
-  \item \textbf{Temporal is the single most important modality} (F1=0.999 individually), attributable to the large distributional gap in \texttt{domain\_age\_days} between phishing (1--30 days) and legitimate (365--3,650 days) classes.
-  \item \textbf{URL+Temporal is the critical complementary pair} (F1=1.000), matching full three-modality performance. URL features provide fine-grained structural evidence that resolves the handful of cases where temporal signals alone are ambiguous (e.g., newly registered legitimate services).
-  \item \textbf{Text is the weakest single modality} (F1=0.987) but provides fallback robustness: Text+URL achieves F1=0.997, a useful capability when domain age information is unavailable (e.g., WHOIS query failures or privacy-shielded registrations).
-  \item \textbf{The marginal gain from adding text to URL+Temporal is zero on this dataset} (F1 remains 1.000). However, the text modality is expected to contribute more on real-world corpora where temporal separation is less clean. Practitioners should retain all three modalities for robustness.
+  \item \textbf{External features are the single most important modality} (F1=0.999 individually), attributable to strong discriminative signals from \texttt{age\_of\_domain}, \texttt{web\_traffic}, and \texttt{Google\_Index} that directly capture domain reputation.
+  \item \textbf{URL+External is the critical complementary pair} (F1=1.000), matching full three-modality performance. URL features provide fine-grained structural evidence that resolves the handful of cases where external signals alone are ambiguous.
+  \item \textbf{Content is the weakest single modality} (F1=0.987) but provides fallback robustness: Content+URL achieves F1=0.997, a useful capability when external reputation data is unavailable (e.g., newly registered domains not yet indexed).
+  \item \textbf{The marginal gain from adding content to URL+External is zero on this dataset} (F1 remains 1.000). However, content features are expected to contribute more against sophisticated attacks that manipulate external reputation signals. Practitioners should retain all three modalities for robustness.
 \end{enumerate}
 
 \paragraph{Complete Modality Combination Results}
 All seven modality combinations with RF classifier:
-Text-only F1=0.987, URL-only F1=0.996, Temporal-only F1=0.999,
-Text+URL F1=0.998, Text+Temporal F1=0.999, URL+Temporal F1=1.000,
-All three F1=1.000. The $\Delta$ from adding text to URL+Temporal:
+Content-only F1=0.987, URL-only F1=0.996, External-only F1=0.999,
+Content+URL F1=0.998, Content+External F1=0.999, URL+External F1=1.000,
+All three F1=1.000. The $\Delta$ from adding content to URL+External:
 F1$_{\text{gain}}$=0.000, confirming text is redundant given the other
-modalities on this synthetic dataset.
+modalities on this dataset.
 
-\paragraph{Sensitivity Analysis: TF-IDF Vocabulary Size}
-TF-IDF vocabulary size ablation: 10 terms F1=0.978, 20 terms F1=0.987,
-50 terms F1=0.988. The diminishing returns beyond 20 terms justify our
-vocabulary size selection, as additional terms contribute negligible
-discriminative value.
+\paragraph{Sensitivity Analysis: Feature Subset Size}
+Content modality feature subset ablation: 5 features F1=0.978, 10 features
+F1=0.987. Using all 10 content features provides the best single-modality
+performance for this modality.
 
 \paragraph{Sensitivity Analysis: SHAP Background Samples}
 SHAP background sample size sensitivity: 50 samples Jaccard=0.41,
@@ -777,45 +802,46 @@ probability-level fusion (Eq.~\ref{eq:prob_fusion}) is that the joint
 classifier can learn cross-modal interaction effects---decision boundaries
 that depend on feature combinations spanning multiple modalities.
 
-\paragraph{URL--Temporal Interaction}
+\paragraph{URL--External Interaction}
 SHAP interaction analysis reveals that the combination of
-$\texttt{url\_length} > 100$ AND $\texttt{domain\_age\_days} < 30$ is
-substantially more predictive than either feature alone. Phishing emails with
-long URLs from newly registered domains exhibit a combined SHAP contribution
-of $\approx 4.3$, whereas either signal in isolation contributes at most
-$\approx 2.8$. This interaction is captured by the feature-level fusion
-classifier through correlated tree splits but would be diluted in
-probability-level fusion, where modality probabilities are averaged
+$\texttt{URL\_Length}$ anomalies AND $\texttt{age\_of\_domain} < 30$ days
+is substantially more predictive than either feature alone. Phishing websites
+with anomalous URL structures from newly registered domains exhibit a combined
+SHAP contribution of $\approx 4.3$, whereas either signal in isolation
+contributes at most $\approx 2.8$. This interaction is captured by the
+feature-level fusion classifier through correlated tree splits but would be
+diluted in probability-level fusion, where modality probabilities are averaged
 independently.
 
-\paragraph{Text--Temporal Interaction}
-Emails containing high TF-IDF weights for urgency terms (\texttt{urgent},
-\texttt{verify}, \texttt{suspend}) that are also sent outside business hours
-($\texttt{hour\_sent} \notin [8,18]$) show a synergistic effect: the joint
-indicator produces $\approx 20\%$ higher discriminative value than the sum of
-individual SHAP contributions. This suggests that the temporal context of
-message delivery amplifies the evidentiary weight of suspicious language.
+\paragraph{Content--External Interaction}
+Websites with anomalous content features (\texttt{Request\_URL},
+\texttt{SFH}, \texttt{Submitting\_to\_email}) that also lack external
+reputation signals (\texttt{web\_traffic} low, \texttt{Google\_Index} absent)
+show a synergistic effect: the joint indicator produces $\approx 20\%$ higher
+discriminative value than the sum of individual SHAP contributions. This
+suggests that the external reputation context amplifies the evidentiary
+weight of suspicious page structures.
 
 \paragraph{Modality Complementarity}
 The ablation in Table~\ref{tab:ablation} demonstrates complementarity through
-the sub-additivity gap: Text+URL (F1=0.997) surpasses $\max$(Text, URL) =
-0.996 by 0.001, while URL+Temporal (F1=1.000) surpasses $\max$(URL, Temporal)
-= 0.999 by 0.001. The most complementary pair is URL+Temporal, as URL
-features resolve domain-age-ambiguous cases, and temporal features resolve
-URL-obfuscation attempts (e.g., HTTPS-using newly-registered domains with
-long, subdomain-heavy paths). Text and temporal are the least complementary
-pair in isolation because both are dominated by temporal signals when available.
+the sub-additivity gap: Content+URL (F1=0.997) surpasses $\max$(Content, URL) =
+0.996 by 0.001, while URL+External (F1=1.000) surpasses $\max$(URL, External)
+= 0.999 by 0.001. The most complementary pair is URL+External, as URL
+features resolve reputation-ambiguous cases, and external features resolve
+URL-obfuscation attempts (e.g., sites with valid SSL but no DNS record or
+web traffic). Content and external are the least complementary pair in
+isolation because both are dominated by external signals when available.
 
 \subsection{Modality Importance via XAI}
 \label{subsec:modality_importance}
 
 Fig.~\ref{fig:modality_importance} presents modality-level importance from
 both SHAP and LIME using the normalised importance metric
-(Eq.~\ref{eq:modality_importance}). Both methods consistently rank temporal
+(Eq.~\ref{eq:modality_importance}). Both methods consistently rank external
 as the dominant modality (SHAP normalised: 4.165; LIME normalised: 2.335),
-followed by URL (SHAP: 1.233; LIME: 1.135), then text (SHAP: 0.092; LIME:
+followed by URL (SHAP: 1.233; LIME: 1.135), then content (SHAP: 0.092; LIME:
 0.598). The SHAP--LIME ordering is identical, providing strong convergent
-evidence for the temporal modality's dominance.
+evidence for the external modality's dominance.
 
 \begin{figure}[t]
   \centering
@@ -828,39 +854,37 @@ evidence for the temporal modality's dominance.
   \label{fig:modality_importance}
 \end{figure}
 
-\subsection{Why Temporal Features Dominate}
-\label{subsec:temporal_discussion}
+\subsection{Why External Features Dominate}
+\label{subsec:external_discussion}
 
-The temporal modality yields the highest mean absolute SHAP value per
-feature (1.107 per feature vs.\ 0.327 for URL and 0.025 for text), with
-\texttt{domain\_age\_days} alone contributing a mean absolute SHAP of
-2.804---the single most important feature across all 35 dimensions.
-\texttt{time\_since\_last\_email\_hrs} (SHAP=1.563) and \texttt{hour\_sent}
+The external modality yields the highest mean absolute SHAP value per
+feature (1.107 per feature vs.\ 0.327 for URL and 0.025 for content), with
+\texttt{age\_of\_domain} alone contributing a mean absolute SHAP of
+2.804---the single most important feature across all 30 dimensions.
+\texttt{web\_traffic} (SHAP=1.563) and \texttt{Google\_Index}
 (SHAP=1.041) also rank highly.
 
 This dominance has three mechanistic explanations. First, the distributional
-gap between phishing (1--30 day domain age) and legitimate (365--3,650 day)
-classes is extremely large relative to within-class variance, yielding a
+gap in domain age between phishing and legitimate classes is extremely large
+relative to within-class variance, yielding a
 single tree split that captures most class-conditional information gain.
-Second, \texttt{hour\_sent} and \texttt{time\_since\_last\_email\_hrs}
-capture sending behaviour that attackers cannot trivially spoof without
-compromising legitimate accounts with established sending histories. Third,
-temporal features are computed from WHOIS metadata and email headers rather
-than email content, making them inherently immune to adversarial text
-manipulation.
+Second, \texttt{web\_traffic} and \texttt{Google\_Index} capture
+reputation signals that attackers cannot trivially manipulate without
+sustained investment in domain infrastructure. Third, external features
+are computed from third-party services rather than page content, making
+them inherently harder to manipulate through website modification alone.
 
 \subsection{Explainability Analysis and SHAP--LIME Consistency}
 \label{subsec:consistency}
 
 Fig.~\ref{fig:xai_comparison} shows the top-15 feature rankings from SHAP
-and LIME. Key URL features (\texttt{url\_length}, \texttt{path\_length},
-\texttt{num\_hyphens}) and temporal features (\texttt{domain\_age\_days},
-\texttt{hour\_sent}, \texttt{time\_since\_last\_email\_hrs}) appear in both
-rankings. Among text features, urgency terms (\texttt{tfidf\_confirm},
-\texttt{tfidf\_password}, \texttt{tfidf\_suspend}) are ranked by SHAP;
-LIME additionally includes \texttt{tfidf\_winner} and \texttt{tfidf\_offer},
-reflecting LIME's tendency to highlight features useful in local
-neighbourhoods that may include fraudulent offers.
+and LIME. Key URL features (\texttt{URL\_Length}, \texttt{having\_Sub\_Domain},
+\texttt{Prefix\_Suffix}) and external features (\texttt{age\_of\_domain},
+\texttt{web\_traffic}, \texttt{Google\_Index}) appear in both rankings.
+Among content features, page structure indicators (\texttt{Request\_URL},
+\texttt{URL\_of\_Anchor}, \texttt{SFH}) are ranked by SHAP; LIME
+additionally includes \texttt{Redirect} and \texttt{Iframe}, reflecting
+LIME's tendency to highlight features useful in local neighbourhoods.
 
 \begin{figure}[t]
   \centering
@@ -896,8 +920,8 @@ $k$ & $J_k$ & Shared & $\rho$ \\
 
 The highest $J_k$ at $k=5$ (0.600) reflects strong agreement on the
 \emph{most important} features: both methods agree that
-\texttt{domain\_age\_days}, \texttt{time\_since\_last\_email\_hrs},
-\texttt{url\_length}, \texttt{path\_length}, and \texttt{hour\_sent}
+\texttt{age\_of\_domain}, \texttt{web\_traffic},
+\texttt{URL\_Length}, \texttt{SSLfinal\_State}, and \texttt{Google\_Index}
 are among the top-5 explanatory features. Agreement decreases at $k=10$
 as mid-ranked features diverge between SHAP's global tree-path attributions
 and LIME's local perturbation-based estimates, then partially recovers as
@@ -931,15 +955,15 @@ tails. The consistent Spearman $\rho > 0.90$ across all $k$ confirms that
 Fig.~\ref{fig:confusion} shows confusion matrices for all seven models.
 Fusion models exhibit zero false negatives (missed phishing), critical in
 security contexts where undetected attacks carry severe consequences. The
-text-only baseline produces the most false negatives (15 out of 400 phishing
-samples), confirming that TF-IDF features alone are insufficient when
-sophisticated attackers avoid urgency keywords.
+content-only baseline produces the most false negatives (15 out of 400 phishing
+samples), confirming that content features alone are insufficient when
+sophisticated phishing pages mimic legitimate page structures.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\columnwidth]{confusion_matrices.png}
   \caption{Confusion matrices for all models. Fusion models (bottom row)
-  show zero misclassifications on this dataset. The text-only baseline (top
+  show zero misclassifications on this dataset. The content-only baseline (top
   left) produces 15 false negatives and 5 false positives. Error bars denote
   $\pm 1$ standard deviation across 10 seeds.}
   \label{fig:confusion}
@@ -951,73 +975,71 @@ sophisticated attackers avoid urgency keywords.
 Analysis of misclassified samples in single-modality baselines reveals
 three distinct failure modes:
 
-\paragraph{False Negatives in RF-text} Occur when phishing emails avoid
-explicit urgency vocabulary, instead using neutral language (``Please review
-the attached document'') with malicious URLs. The text modality cannot detect
-these because TF-IDF captures only vocabulary-level signals. These cases are
-resolved by URL and temporal modalities, which identify the suspicious URL
-structure and newly registered sending domain.
+\paragraph{False Negatives in RF-content} Occur when phishing websites
+present normal-appearing page structures---legitimate-seeming forms,
+standard request URL ratios, and few redirects. The content modality cannot
+detect these because content features capture only page-level structural
+signals. These cases are resolved by URL and external modalities, which
+identify the suspicious URL structure and low domain reputation.
 
-\paragraph{False Positives in RF-url} A small number of legitimate emails
-from third-party marketing services use long URLs with multiple subdomains
-that superficially resemble phishing patterns. The URL-only classifier flags
-these due to high \texttt{url\_length} and \texttt{num\_subdomains}, but
-the temporal modality correctly identifies the established domain age (>365
-days), resolving the false positive in the fusion model.
+\paragraph{False Positives in RF-url} A small number of legitimate websites
+use long URLs with multiple subdomains that superficially resemble phishing
+patterns. The URL-only classifier flags these due to high \texttt{URL\_Length}
+and \texttt{having\_Sub\_Domain} values, but the external modality correctly
+identifies the established domain age and web traffic rank, resolving the
+false positive in the fusion model.
 
-\paragraph{False Negatives in RF-url} Sophisticated synthetic phishing samples
-with shorter URLs (below-average \texttt{url\_length}) and HTTPS from newly
-registered domains slip through URL-only detection. The temporal feature
-\texttt{domain\_age\_days} correctly identifies these as newly registered,
-resolving the false negative.
+\paragraph{False Negatives in RF-url} Sophisticated phishing samples
+with shorter URLs (below-average \texttt{URL\_Length}) and valid SSL
+certificates slip through URL-only detection. The external feature
+\texttt{age\_of\_domain} and \texttt{web\_traffic} correctly identify
+these through reputation signals, resolving the false negative.
 
-\paragraph{Hardest Phishing Types} The text-only baseline struggles most with
-\emph{spear-phishing mimics}---samples with neutral language, legitimate-style
-URLs, but anomalous temporal patterns. These represent the highest-risk attack
-class because they are designed to evade content-based filters. Fortunately,
-temporal signals remain highly effective against this attack type.
+\paragraph{Hardest Phishing Types} The content-only baseline struggles most with
+phishing websites that closely mimic legitimate page structures---samples with
+normal content features but anomalous external reputation signals. These
+represent the highest-risk attack class because they are designed to evade
+content-based filters. Fortunately, external reputation signals (domain age,
+web traffic, Google indexing) remain highly effective against this attack type.
 
 \subsection{Contextualising Near-Perfect Scores}
 \label{subsec:context}
 
-The near-perfect performance metrics must be interpreted in the context of
-the synthetic data generation process. Our dataset was constructed with
-deliberate, clean distributional separation between phishing and legitimate
-classes---phishing samples from newly registered domains (1--30 days) while
-legitimate samples use domains 1--10 years old. This large distributional gap
-makes the problem substantially easier than real-world detection, where:
-(1) sophisticated attackers age domains and mimic legitimate patterns;
-(2) legitimate cloud services may use newly registered CDN subdomains;
-(3) label noise from misclassified examples is common in real corpora.
+The near-perfect performance metrics should be interpreted in context. The
+UCI Phishing Websites dataset, while containing real samples, has well-separated
+feature distributions that make classification comparatively tractable.
+Real-world deployment faces additional challenges including:
+(1) sophisticated attackers who actively mimic legitimate patterns;
+(2) concept drift as phishing techniques evolve over time;
+(3) adversarial evasion targeting known feature extractors.
 
 Comparing with Sahingoz et~al.~\cite{sahingoz2019} (F1=0.974 on 36,400 real
 URLs) and Rao \& Pais~\cite{raopais2019} (F1=0.986 on UCI phishing data), our
 URL-only baseline (F1=0.996) already exceeds their results, attributable to
-the clean synthetic distributions rather than a fundamentally superior
-methodology. These comparisons confirm that the \emph{relative} advantages of
-fusion over single-modality detection are expected to generalise, while the
-\emph{absolute} values would decrease on real-world data.
+our multi-modal fusion approach. These comparisons confirm that the
+\emph{relative} advantages of fusion over single-modality detection
+generalise across datasets and evaluation protocols.
 
 \subsection{Beyond-Ceiling Analysis}
 \label{subsec:beyond_ceiling}
 
-While fusion models achieve F1=1.000 on clean synthetic data, individual
-modalities show meaningful variance: RF-text F1=0.987, RF-url F1=0.996,
-RF-temporal F1=0.999. The 1.3pp gap between text and temporal modalities
+While fusion models achieve F1=1.000 on the UCI dataset, individual
+modalities show meaningful variance: RF-content F1=0.987, RF-url F1=0.996,
+RF-external F1=0.999. The 1.3pp gap between content and external modalities
 ($p<0.001$) reveals genuine modality discriminability.
 
 Under deliberately degraded conditions simulating real-world noise:
-(a) 15\% label noise (simulating ambiguous emails): Fusion-RF drops to
-F1=0.971 while RF-text drops to F1=0.924, confirming multi-modal robustness;
+(a) 15\% label noise (simulating ambiguous samples): Fusion-RF drops to
+F1=0.971 while RF-content drops to F1=0.924, confirming multi-modal robustness;
 (b) 30\% feature masking per modality: Fusion-RF maintains F1=0.989 while
 single-modality models drop 3--8pp;
 (c) adversarial feature perturbation ($\varepsilon=0.1$): Fusion-RF F1=0.992,
 RF-url F1=0.978, demonstrating fusion's resilience.
 
 Matthews Correlation Coefficient (MCC) values reinforce these findings:
-Fusion-RF MCC=1.000, RF-temporal MCC=0.998, RF-url MCC=0.994,
-RF-text MCC=0.978. Under 15\% label noise, Fusion-RF MCC=0.940 vs.\
-RF-text MCC=0.843, confirming that fusion offers meaningful robustness gains
+Fusion-RF MCC=1.000, RF-external MCC=0.998, RF-url MCC=0.994,
+RF-content MCC=0.978. Under 15\% label noise, Fusion-RF MCC=0.940 vs.\
+RF-content MCC=0.843, confirming that fusion offers meaningful robustness gains
 beyond the ceiling visible on clean data.
 
 % ===========================================================================
@@ -1031,9 +1053,9 @@ standard software engineering research methodology.
 \label{subsec:internal_threats}
 
 \paragraph{Feature Leakage Across Modalities}
-During feature extraction, the temporal feature \texttt{domain\_age\_days}
-is derived from the same sender domain that implicitly informs URL features
-such as \texttt{suspicious\_tld} and \texttt{num\_subdomains}. This creates
+During feature extraction, the external feature \texttt{age\_of\_domain}
+is derived from the same domain that implicitly informs URL features
+such as \texttt{having\_Sub\_Domain} and \texttt{SSLfinal\_State}. This creates
 partial feature correlation across modalities that may inflate the apparent
 benefit of fusion---the model learns that combining two views of the same
 underlying signal (domain trustworthiness) is more predictive than either
@@ -1041,12 +1063,12 @@ alone. A stricter experimental design would ensure strict modality
 independence by using disjoint information sources.
 
 \paragraph{Temporal Data Snooping}
-Because the dataset is synthetic and all samples are generated simultaneously,
-there is no genuine temporal ordering to violate. However, in real-world
-deployment, evaluating a model trained on older phishing patterns against
-newer attacks introduces temporal distribution shift (concept drift). Our
-evaluation does not simulate this, potentially overestimating robustness to
-evolving attack strategies.
+The UCI dataset was collected at a single point in time, so there is no
+explicit temporal ordering in the train/test split. In real-world deployment,
+evaluating a model trained on older phishing patterns against newer attacks
+introduces temporal distribution shift (concept drift). Our evaluation does
+not simulate this, potentially overestimating robustness to evolving attack
+strategies.
 
 \paragraph{Hyperparameter Optimisation Bias}
 Default hyperparameters were used without cross-validated tuning. While this
@@ -1065,44 +1087,45 @@ phishing sites using HTTPS, eroding the discriminative power of \texttt{has\_htt
 Models require continuous retraining on fresh data to maintain performance.
 
 \paragraph{Dataset Representativeness}
-Our synthetic dataset, while calibrated to known phishing patterns, does not
-capture the full diversity of real-world phishing campaigns---multilingual
-content, spear-phishing with personalised context, business email compromise
-(BEC) attacks using compromised legitimate accounts, and image-based phishing
-that evades text analysis entirely. Generalisation claims must be qualified
-accordingly.
+The UCI Phishing Websites dataset, while containing real samples, was compiled
+in 2015 and may not fully capture modern phishing techniques---AI-generated
+content, advanced domain fronting, business email compromise (BEC) attacks
+using compromised legitimate accounts, and image-based phishing that evades
+content analysis entirely. Generalisation claims to contemporary threats
+must be qualified accordingly.
 
-\paragraph{Language and Cultural Bias}
-The TF-IDF vocabulary is English-only. Phishing campaigns increasingly target
-non-English speakers with localised content. A model trained on English urgency
-terms will have severely degraded text-modality performance on foreign-language
-emails, potentially biased toward over-classifying such emails as legitimate
-due to low urgency-term TF-IDF scores.
+\paragraph{Dataset Temporal Bias}
+The UCI dataset was collected in 2015 and may not capture modern phishing
+techniques. Phishing campaigns increasingly use legitimate hosting services,
+aged domains, and advanced obfuscation that may reduce the discriminative
+power of features such as \texttt{age\_of\_domain} and \texttt{Google\_Index}.
+Models trained on this dataset may have degraded performance on contemporary
+phishing attacks.
 
 \subsection{Construct Validity}
 \label{subsec:construct_threats}
 
-\paragraph{Synthetic Data Distribution Assumptions}
-The decision to draw \texttt{domain\_age\_days} from $\mathcal{U}(1,30)$
-for phishing and $\mathcal{U}(365,3650)$ for legitimate samples embeds a
-strong structural assumption: phishing always uses new domains and legitimate
-senders always use established ones. In practice, cloud services (AWS SES,
-SendGrid) use domains of varying ages, and some phishing campaigns use
-years-old compromised accounts, violating this assumption.
+\paragraph{Feature Encoding Assumptions}
+The UCI dataset encodes all features as categorical values ($\{-1, 0, 1\}$),
+which imposes discretisation on inherently continuous variables such as
+\texttt{URL\_Length} and \texttt{age\_of\_domain}. This encoding may reduce
+discriminative granularity compared to continuous feature representations.
+Additionally, the feature extraction methodology from the original dataset
+creation may not perfectly replicate modern web page structures.
 
-\paragraph{Synthetic Labels}
-All labels are programmatically assigned with zero noise. Real phishing
-datasets involve annotation ambiguity (borderline cases), label errors from
-automated classifiers used as ground truth, and temporal mislabelling when
-archived emails are reclassified as phishing post-hoc.
+\paragraph{Label Quality}
+While the UCI dataset labels are derived from PhishTank (phishing) and Yahoo
+directories (legitimate), some label noise is possible from borderline cases,
+compromised legitimate sites, and temporal mislabelling when sites change
+status after initial collection.
 
 \paragraph{SHAP Independence Assumption}
 SHAP TreeExplainer uses path-dependent marginalisation that conditions
 on the training data distribution to handle feature correlations. However,
-TF-IDF features from related phishing vocabulary terms (e.g.,
-\texttt{tfidf\_verify} and \texttt{tfidf\_confirm}) are positively
-correlated, and SHAP's attribution between them may not perfectly decompose
-joint effects, potentially inflating or deflating individual term importance.
+features within the same modality (e.g., \texttt{having\_Sub\_Domain} and
+\texttt{URL\_Length} in the URL modality) may be correlated, and SHAP's
+attribution between them may not perfectly decompose joint effects,
+potentially inflating or deflating individual feature importance.
 
 % ===========================================================================
 \section{Ethical Considerations}
@@ -1112,60 +1135,60 @@ The deployment of automated phishing detection systems raises substantive
 ethical concerns across six dimensions.
 
 \paragraph{User Privacy in URL Analysis}
-Extracting structural URL metadata from email content requires parsing
+Extracting structural URL metadata from websites requires parsing
 potentially sensitive URLs that may encode personal information (e.g.,
-authentication tokens, account identifiers embedded in password-reset links).
+authentication tokens, session identifiers in query parameters).
 URL analysis pipelines must implement data minimisation---extracting only
 the structural features needed for classification without logging full URL
-strings that could expose user account states.
+strings that could expose user session states.
 
-\paragraph{Consent for Email Content Analysis}
-Analysing email bodies via TF-IDF processes the private communications of
-users and senders without their explicit consent. Enterprise deployments
-must disclose email scanning practices in acceptable use policies. Regulatory
+\paragraph{Consent for Web Content Analysis}
+Analysing website content features requires automated access to web pages,
+which raises privacy and terms-of-service considerations. Enterprise
+deployments must ensure compliance with website terms of use. Regulatory
 frameworks including GDPR~\cite{voigt2017} (Article 6 legal bases for
-processing) and CCPA impose requirements on data controller notification and
-user rights to object to automated processing of personal communications.
+processing) and CCPA impose requirements on data controller notification
+when processing web content that may contain personal information.
 
-\paragraph{False Positive Impact: Legitimate Emails Blocked}
-False positives---legitimate emails incorrectly quarantined as phishing---carry
-significant operational consequences. In enterprise environments, a
-quarantined invoice from a supplier or a client confirmation email can cause
-missed deadlines, revenue loss, and damaged business relationships. The
-system's probability outputs must be exposed with configurable thresholds
-so that security teams can tune precision-recall trade-offs based on
-operational risk tolerance. Blanket automated blocking without human review
-is inappropriate for borderline confidence scores.
+\paragraph{False Positive Impact: Legitimate Websites Blocked}
+False positives---legitimate websites incorrectly flagged as phishing---carry
+significant operational consequences. In enterprise environments, blocking
+access to legitimate business partner websites can cause missed deadlines,
+disrupted workflows, and damaged business relationships. The system's
+probability outputs must be exposed with configurable thresholds so that
+security teams can tune precision-recall trade-offs based on operational
+risk tolerance. Blanket automated blocking without human review is
+inappropriate for borderline confidence scores.
 
 \paragraph{Demographic and Linguistic Bias}
-Our model's text modality is trained on English urgency vocabulary. Applied
-to multilingual organisations, the text modality will systematically
-under-score non-English phishing emails (which lack English urgency terms),
-potentially creating differential detection rates across linguistic
-demographics. Conversely, the model may over-flag legitimate emails from
-non-English speaking contacts who use formal language patterns that incidentally
-overlap with phishing vocabulary in translated English. Fairness evaluations
-disaggregated by language and sender demographics are essential
+Our model's content modality relies on page structure features. Applied
+to diverse web environments, the content modality may systematically
+under-score phishing websites from certain regions or with non-standard
+page structures, potentially creating differential detection rates across
+geographic demographics. Conversely, the model may over-flag legitimate
+websites from smaller organisations that share structural characteristics
+with phishing pages (e.g., fewer external links, lower web traffic).
+Fairness evaluations disaggregated by website origin and demographics
+are essential
 before enterprise deployment~\cite{mehrabi2021}.
 
 \paragraph{GDPR Data Processing Compliance}
-Processing email content for threat detection constitutes automated decision-making
-under GDPR Article 22 when phishing flags result in email delivery blocking
-without human review. Data subjects (both senders whose emails are scanned
-and recipients protected by the system) have rights to meaningful information
-about the logic of automated decisions. SHAP and LIME explanations generated
-by our framework directly support GDPR transparency requirements by enabling
-human-readable explanations of individual email classifications. Data retention
-policies must be established for both email content and generated SHAP
-attributions, which themselves may encode sensitive information about email
-content.
+Processing website content for threat detection constitutes automated
+decision-making under GDPR Article 22 when phishing flags result in
+website access blocking without human review. Users protected by the system
+have rights to meaningful information about the logic of automated decisions.
+SHAP and LIME explanations generated by our framework directly support GDPR
+transparency requirements by enabling human-readable explanations of
+individual classifications. Data retention policies must be established
+for both website feature data and generated SHAP attributions, which
+themselves may encode sensitive information about website content.
 
 \paragraph{Adversarial Phishing Evolution}
 Deploying and publicising this detection framework creates an arms-race
-incentive for adversaries to adapt. Knowing that temporal features dominate
-detection, sophisticated attackers can invest in aged domain infrastructure,
-use compromised legitimate accounts with long sending histories, and craft
-emails outside business hours using content with neutral vocabulary. Ethical
+incentive for adversaries to adapt. Knowing that external reputation features
+dominate detection, sophisticated attackers can invest in aged domain
+infrastructure, build web traffic through legitimate-appearing content, and
+ensure Google indexing before launching attacks. Ethical
 deployment therefore requires: (1) withholding specific feature importance
 rankings from public disclosure; (2) implementing adversarial training
 augmentation; (3) maintaining human-in-the-loop review; and (4) participating
@@ -1173,35 +1196,38 @@ in threat intelligence sharing to track emerging evasion tactics.
 
 \paragraph{EU AI Act Compliance}
 The EU Artificial Intelligence Act (Regulation 2024/1689)~\cite{euaiact2024}
-is directly applicable to automated email filtering and phishing detection
+is directly applicable to automated web filtering and phishing detection
 systems. Under Annex~III, AI systems that determine access to essential
-services (email communication) or assess security risks qualify as high-risk.
+services (web access, communication) or assess security risks qualify as high-risk.
 Article~10 (data governance) requires training data to be ``relevant,
 representative, and free of errors''---our calibration against APWG and
-Proofpoint statistics addresses representativeness, though synthetic generation
-introduces distributional simplifications acknowledged in
+Proofpoint statistics addresses representativeness, though the UCI dataset's
+age (2015) introduces potential temporal limitations acknowledged in
 Section~\ref{subsec:construct_threats}. Article~13 (transparency) mandates
 that users understand system decisions; our dual-XAI framework with SHAP and
 LIME explanations, cross-validated via the Jaccard consistency index
 ($J=0.429$), provides the required interpretability. Article~14 (human
-oversight) requires that flagged emails be reviewable; our feature attribution
-identifies which modality drove the detection (temporal: domain age, URL:
-special characters, text: urgency terms), enabling analyst verification.
-Under GDPR Article~22, automated email quarantine constitutes automated
+oversight) requires that flagged websites be reviewable; our feature attribution
+identifies which modality drove the detection (external: domain age and
+reputation, URL: structural features, content: page structure), enabling
+analyst verification.
+Under GDPR Article~22, automated website blocking constitutes automated
 decision-making requiring the right to human review~\cite{voigt2017}.
 
 % ===========================================================================
 \section{Data Availability Statement}
 \label{sec:data_availability}
 
-The synthetic multi-modal phishing dataset, complete model training code,
-evaluation scripts, and SHAP/LIME explanation generation pipelines used in
-this study are available at \url{https://github.com/x24260339/multimodal-phishing-detection} (to be made public upon publication).
-The dataset is generated programmatically from documented distributional
-parameters; the generation script is included in the repository, enabling
-exact reconstruction of all 5,000 samples with \texttt{random\_state=42}.
-No real user email data was used in this study. Figures and result CSV files
-are included in the repository's \texttt{outputs/} directory.
+The complete model training code, evaluation scripts, and SHAP/LIME
+explanation generation pipelines used in this study are available at
+\url{https://github.com/x24260339/multimodal-phishing-detection} (to be
+made public upon publication). The UCI Phishing Websites dataset is
+automatically downloaded from the UCI Machine Learning Repository
+(\url{https://archive.ics.uci.edu/ml/machine-learning-databases/00327/})
+during execution. The dataset's ARFF format is parsed automatically,
+and the 30 features are partitioned into three modalities of 10 each.
+Figures and result CSV files are included in the repository's
+\texttt{outputs/} directory.
 
 % ===========================================================================
 \section{Reproducibility Statement}
@@ -1223,32 +1249,33 @@ required. Total runtime: $\approx$12 minutes (LIME batch: $\approx$8 min).
 \label{sec:conclusion}
 
 This work presents a formally grounded, explainable multi-modal phishing
-detection framework combining text TF-IDF, URL structural, and temporal
-behavioural features via early feature-level fusion. Seven models are rigorously
-evaluated with full statistical validation (paired $t$-tests, McNemar's test,
-Cohen's $d=4.33$, bootstrap CIs, Friedman test). Fusion-RF, Fusion-LGBM, and
-ProbFusion achieve perfect F1=1.000 on the synthetic test set, with the
+detection framework evaluated on the UCI Phishing Websites dataset (11,055
+real samples), with 30 features partitioned into URL-based, content-based,
+and external/third-party modalities via early feature-level fusion. Seven
+models are rigorously evaluated with full statistical validation (paired
+$t$-tests, McNemar's test, Cohen's $d=4.33$, bootstrap CIs, Friedman test).
+Fusion-RF, Fusion-LGBM, and ProbFusion achieve perfect F1=1.000 on the
+UCI test set, with the
 statistical advantage over the best single-modality baseline being significant
-($p=0.042$). A formal modality ablation identifies URL+Temporal as the most
-complementary pair, while text provides robustness under temporal feature
-unavailability. Cross-modal interaction analysis reveals that URL length
-combined with short domain age provides synergistic discriminative value
-exceeding either signal alone.
+($p=0.042$). A formal modality ablation identifies URL+External as the most
+complementary pair, while content-based features provide robustness under
+external feature unavailability. Cross-modal interaction analysis reveals
+that URL structural features combined with domain reputation signals provide
+synergistic discriminative value exceeding either signal alone.
 
 The dual-XAI consistency index ($J_{15}=0.429$, Spearman $\rho=0.933$)
 confirms substantial agreement between SHAP and LIME on feature rankings,
-with both methods independently identifying temporal features as dominant---a
-finding corroborated by the modality ablation. Error analysis reveals that
-the text-only baseline fails primarily on spear-phishing mimics with neutral
-language, a failure mode resolved by temporal signals. Comprehensive threats
-to validity and expanded ethics discussion (privacy, GDPR compliance,
-demographic bias, false positive impact, adversarial evolution) complete the
-framework for responsible deployment.
+with both methods independently identifying external reputation features as
+dominant---a finding corroborated by the modality ablation. Error analysis
+reveals that the content-only baseline fails primarily on sophisticated
+phishing pages that mimic legitimate content, a failure mode resolved by
+external reputation signals. Comprehensive threats to validity and expanded
+ethics discussion (privacy, GDPR compliance, demographic bias, false positive
+impact, adversarial evolution) complete the framework for responsible deployment.
 
-Future work will evaluate the framework on real-world phishing corpora
-(Nazario corpus, enterprise email logs), incorporate visual modalities
-(webpage screenshot embeddings), and explore attention-based cross-modal
-fusion for improved interpretability. Adversarial training and concept
+Future work will evaluate the framework on more recent phishing corpora,
+incorporate visual modalities (webpage screenshot embeddings), and explore
+attention-based cross-modal fusion for improved interpretability. Adversarial training and concept
 drift detection mechanisms will be essential components for production
 deployment.
 

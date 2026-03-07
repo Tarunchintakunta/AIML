@@ -21,6 +21,28 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
+# Import feature name lists for modality coloring
+try:
+    from data_loader import URL_FEATURE_NAMES, CONTENT_FEATURE_NAMES, EXTERNAL_FEATURE_NAMES
+except ImportError:
+    URL_FEATURE_NAMES = []
+    CONTENT_FEATURE_NAMES = []
+    EXTERNAL_FEATURE_NAMES = []
+
+_URL_SET = set(URL_FEATURE_NAMES)
+_CONTENT_SET = set(CONTENT_FEATURE_NAMES)
+_EXTERNAL_SET = set(EXTERNAL_FEATURE_NAMES)
+
+
+def _get_modality_color(feat_name: str) -> str:
+    """Return color based on which modality a feature belongs to."""
+    if feat_name in _URL_SET:
+        return "#4C72B0"   # blue for URL
+    elif feat_name in _CONTENT_SET:
+        return "#55A868"   # green for Content
+    else:
+        return "#C44E52"   # red for External
+
 
 # Global style
 plt.rcParams.update({
@@ -180,22 +202,10 @@ def plot_xai_comparison(shap_feat_imp: pd.DataFrame,
     """Side-by-side horizontal bar charts of SHAP vs LIME top-k features."""
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-    # Color features by modality
-    def _get_color(feat_name):
-        if feat_name.startswith("tfidf_"):
-            return "#4C72B0"  # blue for text
-        elif feat_name in ["url_length", "num_dots", "num_hyphens",
-                           "num_slashes", "has_https", "has_ip_address",
-                           "suspicious_tld", "num_subdomains",
-                           "path_length", "has_at_symbol"]:
-            return "#55A868"  # green for URL
-        else:
-            return "#C44E52"  # red for temporal
-
     # SHAP top-k
     ax = axes[0]
     shap_top = shap_feat_imp.head(top_k).iloc[::-1]
-    colors = [_get_color(f) for f in shap_top["feature"]]
+    colors = [_get_modality_color(f) for f in shap_top["feature"]]
     ax.barh(shap_top["feature"], shap_top["mean_abs_shap"],
             color=colors, edgecolor="gray", linewidth=0.5)
     ax.set_xlabel("Mean |SHAP value|")
@@ -205,7 +215,7 @@ def plot_xai_comparison(shap_feat_imp: pd.DataFrame,
     # LIME top-k
     ax = axes[1]
     lime_top = lime_feat_imp.head(top_k).iloc[::-1]
-    colors = [_get_color(f) for f in lime_top["feature"]]
+    colors = [_get_modality_color(f) for f in lime_top["feature"]]
     ax.barh(lime_top["feature"], lime_top["mean_abs_lime"],
             color=colors, edgecolor="gray", linewidth=0.5)
     ax.set_xlabel("Mean |LIME weight|")
@@ -215,9 +225,9 @@ def plot_xai_comparison(shap_feat_imp: pd.DataFrame,
     # Legend
     from matplotlib.patches import Patch
     legend_elements = [
-        Patch(facecolor="#4C72B0", label="Text"),
-        Patch(facecolor="#55A868", label="URL"),
-        Patch(facecolor="#C44E52", label="Temporal"),
+        Patch(facecolor="#4C72B0", label="URL"),
+        Patch(facecolor="#55A868", label="Content"),
+        Patch(facecolor="#C44E52", label="External"),
     ]
     fig.legend(handles=legend_elements, loc="upper center",
                ncol=3, fontsize=9, bbox_to_anchor=(0.5, 1.02))
@@ -243,18 +253,7 @@ def plot_shap_summary(shap_values: np.ndarray, X: np.ndarray,
     mean_abs = np.mean(np.abs(shap_values), axis=0)
     sorted_idx = np.argsort(mean_abs)
 
-    def _get_color(feat_name):
-        if feat_name.startswith("tfidf_"):
-            return "#4C72B0"
-        elif feat_name in ["url_length", "num_dots", "num_hyphens",
-                           "num_slashes", "has_https", "has_ip_address",
-                           "suspicious_tld", "num_subdomains",
-                           "path_length", "has_at_symbol"]:
-            return "#55A868"
-        else:
-            return "#C44E52"
-
-    colors = [_get_color(feature_names[i]) for i in sorted_idx]
+    colors = [_get_modality_color(feature_names[i]) for i in sorted_idx]
     ax.barh([feature_names[i] for i in sorted_idx],
             mean_abs[sorted_idx], color=colors, edgecolor="gray",
             linewidth=0.3)
@@ -264,9 +263,9 @@ def plot_shap_summary(shap_values: np.ndarray, X: np.ndarray,
 
     from matplotlib.patches import Patch
     legend_elements = [
-        Patch(facecolor="#4C72B0", label="Text"),
-        Patch(facecolor="#55A868", label="URL"),
-        Patch(facecolor="#C44E52", label="Temporal"),
+        Patch(facecolor="#4C72B0", label="URL"),
+        Patch(facecolor="#55A868", label="Content"),
+        Patch(facecolor="#C44E52", label="External"),
     ]
     ax.legend(handles=legend_elements, loc="lower right", fontsize=8)
 

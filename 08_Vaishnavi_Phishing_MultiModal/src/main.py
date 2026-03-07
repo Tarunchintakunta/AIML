@@ -5,11 +5,11 @@ Project 8: Explainable Multi-Modal Phishing Detection
 Student: Vaishnavi Purohit (24260339)
 
 Usage:
-    python main.py --synthetic
-    python main.py --synthetic --n_samples 8000 --lime_instances 100
+    python main.py
+    python main.py --lime_instances 100 --shap_samples 300
 
 Pipeline:
-    1. Generate / load multi-modal phishing data
+    1. Download / load real UCI Phishing Websites dataset (11,055 samples)
     2. Train single-modality baselines (RF per modality)
     3. Train late-fusion models (RF, XGBoost, LightGBM, ProbFusion)
     4. Run XAI pipeline (SHAP + LIME + consistency)
@@ -31,7 +31,7 @@ SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SRC_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-from data_loader import generate_synthetic_dataset, prepare_splits
+from data_loader import load_uci_phishing, prepare_splits, MODALITY_RANGES
 from model import train_all_models, print_metrics
 from explainers import run_xai_pipeline
 from visualize import generate_all_plots
@@ -42,16 +42,8 @@ def parse_args():
         description="Explainable Multi-Modal Phishing Detection Pipeline"
     )
     parser.add_argument(
-        "--synthetic", action="store_true",
-        help="Use synthetic data generation (required for demo)"
-    )
-    parser.add_argument(
-        "--n_samples", type=int, default=5000,
-        help="Number of synthetic samples (default: 5000)"
-    )
-    parser.add_argument(
-        "--phishing_ratio", type=float, default=0.4,
-        help="Ratio of phishing samples (default: 0.4)"
+        "--data_dir", type=str, default=None,
+        help="Directory for dataset cache (default: <project>/data/phishing)"
     )
     parser.add_argument(
         "--test_size", type=float, default=0.2,
@@ -88,21 +80,14 @@ def main():
     print("=" * 70)
     print("  EXPLAINABLE MULTI-MODAL PHISHING DETECTION")
     print("  Student: Vaishnavi Purohit (24260339)")
+    print("  Dataset: UCI Phishing Websites (11,055 samples, 30 features)")
     print("=" * 70)
 
     # ------------------------------------------------------------------
-    # Step 1: Data
+    # Step 1: Data - Download and load real UCI Phishing dataset
     # ------------------------------------------------------------------
-    if args.synthetic:
-        print("\n[Step 1] Generating synthetic multi-modal phishing data...")
-        data = generate_synthetic_dataset(
-            n_samples=args.n_samples,
-            phishing_ratio=args.phishing_ratio,
-            random_state=args.random_state,
-        )
-    else:
-        print("[Error] Only --synthetic mode is currently supported.")
-        sys.exit(1)
+    print("\n[Step 1] Loading UCI Phishing Websites dataset...")
+    data = load_uci_phishing(data_dir=args.data_dir)
 
     splits = prepare_splits(
         data, test_size=args.test_size,
@@ -143,6 +128,7 @@ def main():
         X_train=splits["combined"]["X_train"],
         X_test=splits["combined"]["X_test"],
         feature_names=feature_names,
+        modality_ranges=MODALITY_RANGES,
         n_lime_instances=args.lime_instances,
         shap_background_size=args.shap_samples,
     )
@@ -202,6 +188,7 @@ def main():
     print("=" * 70)
     print(f"\n  Total time: {elapsed:.1f}s")
     print(f"  Output directory: {args.output_dir}")
+    print(f"  Dataset: UCI Phishing Websites (real data, {len(data['y'])} samples)")
     print(f"\n  Model results:")
     for m in all_metrics:
         auc_str = f"{m['auc_roc']:.4f}" if m['auc_roc'] is not None else "N/A"

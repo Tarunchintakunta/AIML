@@ -238,15 +238,20 @@ def run_all_models(
 # CLI quick-test
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    from data_loader import generate_dataset, prepare_features
+    import os
+    from data_loader import load_real_datasets, prepare_features
 
-    df = generate_dataset(n_samples=2000, anomaly_ratio=0.15, seed=42)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(os.path.dirname(script_dir), "data")
+
+    df = load_real_datasets(data_dir=data_dir, seed=42)
     X_tfidf, _ = prepare_features(df, method="tfidf")
     X_trans, _  = prepare_features(df, method="transformer")
     y = df["label"].values
 
-    print("Running all models ...\n")
-    results = run_all_models(X_tfidf, X_trans, y, contamination=0.15)
+    contamination = max(0.01, min(0.5, y.mean()))
+    print(f"Running all models (contamination={contamination:.4f}) ...\n")
+    results = run_all_models(X_tfidf, X_trans, y, contamination=contamination)
 
     print("\n--- Best model by F1 ---")
     best = max(results, key=lambda r: r.f1)

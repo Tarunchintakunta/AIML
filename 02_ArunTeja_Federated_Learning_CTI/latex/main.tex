@@ -42,8 +42,8 @@ enables cross-organisational threat intelligence sharing while
 guaranteeing data sovereignty.
 We make four concrete contributions: (1) a unified evaluation of
 three aggregation strategies---FedAvg, Krum, and coordinate-wise
-Median---across UNSW-NB15, CIC-IDS2017, and NSL-KDD benchmark
-datasets partitioned into non-IID Dirichlet distributions
+Median---on the NSL-KDD benchmark dataset (with KDD Cup~99 as
+alternative), partitioned into non-IID Dirichlet distributions
 ($\alpha=0.5$, $K=5$ clients); (2) formal
 $(\epsilon,\delta)$-differential privacy analysis covering six
 privacy budgets ($\epsilon \in \{0.1, 0.5, 1.0, 2.0, 5.0, 10.0\}$)
@@ -104,17 +104,19 @@ formal differential privacy, maintaining intrusion detection accuracy
 comparable to centralised baselines, tolerating Byzantine clients,
 and remaining computationally feasible on CPU-only hardware?}
 
-Three publicly available benchmark datasets---UNSW-NB15~\cite{moustafa2015},
-CIC-IDS2017~\cite{sharafaldin2018}, and NSL-KDD~\cite{tavallaee2009}---are
-employed to capture diverse attack types, traffic patterns, and feature
-distributions representative of real network environments.
+The NSL-KDD benchmark dataset~\cite{tavallaee2009} is employed as the primary
+evaluation dataset, auto-downloaded from a public GitHub mirror. It comprises
+125,973 training and 22,544 testing records with 41 features (38 numeric and
+3 categorical: \texttt{protocol\_type}, \texttt{service}, \texttt{flag}) and
+four attack categories (DoS, Probe, R2L, U2R). KDD Cup~99 (auto-downloaded
+via scikit-learn) is additionally supported as an alternative benchmark.
 
 \textbf{Contributions.}
 This paper makes the following original contributions:
 \begin{itemize}
   \item A systematic comparative evaluation of FedAvg, Krum, and
-    coordinate-wise Median under identical non-IID conditions across
-    three IDS benchmark datasets.
+    coordinate-wise Median under identical non-IID conditions on the
+    NSL-KDD benchmark dataset.
   \item Formal $(\epsilon,\delta)$-DP analysis across six privacy
     budgets with noise-scale, sensitivity, and accuracy characterised
     in a unified table.
@@ -374,8 +376,8 @@ Amin et al.~\cite{amin2025} (2025) &
 \textbf{This work} (2025) &
   FedAvg, Krum, Median &
   $(\epsilon,\delta)$-DP &
-  UNSW-NB15, CIC-IDS2017, NSL-KDD &
-  Multi-dataset, non-IID, DP + Byzantine, CPU-feasible &
+  NSL-KDD (+ KDD Cup~99 alt.) &
+  Non-IID, DP + Byzantine, CPU-feasible &
   Simulated federation; benchmark datasets only \\
 \bottomrule
 \end{tabular}
@@ -386,37 +388,29 @@ Amin et al.~\cite{amin2025} (2025) &
 
 \subsection{Dataset Preparation}
 
-Three benchmark IDS datasets capture diverse network environments and
-attack taxonomies:
+The primary benchmark dataset is \textbf{NSL-KDD}~\cite{tavallaee2009},
+auto-downloaded from a public GitHub mirror, which provides 148,517
+records (125,973 training, 22,544 testing) with 41 features (38 numeric
+and 3 categorical: \texttt{protocol\_type}, \texttt{service},
+\texttt{flag}) and four attack categories (DoS, Probe, R2L, U2R).
+NSL-KDD addresses known issues with KDD Cup~99 by removing redundant
+records and balancing the difficulty distribution.
+\textbf{KDD Cup~99} (auto-downloaded via scikit-learn's
+\texttt{fetch\_kddcup99}) is additionally supported as an alternative
+benchmark with approximately 494,000 records sharing the same 41-feature
+schema.
 
-\textbf{UNSW-NB15}~\cite{moustafa2015} contains 2,540,044 records
-with 49 features extracted from raw packet captures, covering nine
-attack categories (Fuzzers, Analysis, Backdoors, DoS, Exploits,
-Generic, Reconnaissance, Shellcode, Worms).
-After removing duplicate entries and records with missing values,
-257,673 samples are retained.
-
-\textbf{CIC-IDS2017}~\cite{sharafaldin2018} comprises 2,830,743
-flow-level records characterised by 78 features from CICFlowMeter,
-representing benign traffic and 14 attack types including brute-force,
-DDoS, web attacks, and infiltration.
-After cleaning infinite values and NaN entries, 2,273,097 samples
-remain.
-
-\textbf{NSL-KDD}~\cite{tavallaee2009} provides 148,517 records
-(125,973 training, 22,544 testing) with 41 features and four attack
-categories (DoS, Probe, R2L, U2R), addressing known issues with
-KDD Cup~99 by removing redundant records.
-
-All datasets undergo a unified preprocessing pipeline:
-(1)~categorical features are one-hot encoded;
+The preprocessing pipeline proceeds as follows:
+(1)~the three categorical features (\texttt{protocol\_type},
+\texttt{service}, \texttt{flag}) are one-hot encoded, expanding the
+feature space to approximately 122 features;
 (2)~numerical features are standardised to zero mean and unit
 variance using \texttt{StandardScaler};
 (3)~labels are binarised into \textit{normal} and \textit{attack}
 classes;
 (4)~the combined feature space is reduced to 40 features via
 variance-based feature selection.
-Each dataset is split 80/20 with stratified sampling prior to
+The dataset is split 80/20 with stratified sampling prior to
 federated partitioning.
 
 Non-IID data heterogeneity across $K=5$ federated clients is
@@ -429,20 +423,21 @@ landscapes across different organisations.
 
 \subsection{Dataset Validation and Representativeness}
 
-UNSW-NB15, CIC-IDS2017, and NSL-KDD are established benchmark
-datasets employed in over 500 published intrusion detection studies,
-making them the de facto standard for reproducible IDS research.
-Per-dataset class distributions after preprocessing are:
-UNSW-NB15 contains approximately 87.3\% benign and 12.7\% attack
-samples (257,673 total); CIC-IDS2017 contains approximately 80.3\%
-benign and 19.7\% attack samples (2,273,097 total); NSL-KDD contains
-approximately 53.5\% benign and 46.5\% attack samples (148,517 total).
-The feature spaces overlap substantially: after projecting all three
-datasets to the unified 40-feature representation, pairwise cosine
-similarities between dataset-level feature centroids exceed 0.71,
-confirming that the shared representation captures a common semantic
-layer of network flow statistics across disparate collection
-environments.
+NSL-KDD is an established benchmark dataset employed in over 500
+published intrusion detection studies, making it the de facto standard
+for reproducible IDS research. It was specifically designed to address
+the limitations of KDD Cup~99---namely redundant records and unrealistic
+class distributions---while preserving the same 41-feature schema
+derived from the 1998 DARPA Intrusion Detection Evaluation.
+The class distribution after binarisation is approximately 53.5\%
+normal and 46.5\% attack samples (148,517 total), providing a
+near-balanced evaluation that reduces the influence of class
+imbalance on aggregation strategy comparison.
+
+The dataset is auto-downloaded from a public GitHub mirror, ensuring
+full reproducibility without manual data acquisition. KDD Cup~99 is
+additionally available via scikit-learn's \texttt{fetch\_kddcup99}
+utility as an alternative benchmark sharing the same feature schema.
 
 These benchmarks, while not operational SOC data, represent the gold
 standard in reproducible IDS research.
@@ -451,8 +446,8 @@ learning studies (Table~\ref{tab:published_baselines}) under identical
 data conditions.
 
 Following Arp et al.~\cite{arp2022} recommendations for avoiding
-common ML-in-security pitfalls, we use stratified temporal splits
-and report per-dataset disaggregated results to prevent distribution
+common ML-in-security pitfalls, we use stratified sampling
+and report disaggregated results to prevent distribution
 leakage.
 
 \subsection{Federated Learning Framework}
@@ -1204,13 +1199,12 @@ obtain more comprehensive variance estimates.
 
 \subsection{External Validity}
 
-\textbf{Synthetic and Benchmark Data.}
-UNSW-NB15, CIC-IDS2017, and NSL-KDD are generated from simulated or
-controlled network environments.
+\textbf{Benchmark Data.}
+NSL-KDD and KDD Cup~99 are derived from controlled network testbed
+environments.
 Real production SOC data exhibits different statistical properties:
 concept drift, higher class imbalance, noisy labels, and proprietary
-feature engineering that may not be reproduced by CICFlowMeter
-features.
+feature engineering.
 Results on benchmark datasets may not directly transfer to operational
 deployments.
 

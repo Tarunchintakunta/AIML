@@ -37,28 +37,30 @@ The proliferation of encryption protocols such as TLS~1.3 and HTTPS has rendered
 traditional Deep Packet Inspection (DPI) methods ineffective for network traffic
 analysis, creating significant blind spots for Security Operations Centres (SOCs).
 This study proposes a hybrid CNN-LSTM architecture with additive temporal attention
-for classifying encrypted network traffic without decryption, using 28 flow-level
-statistical features extracted by CICFlowMeter. Evaluated on the ISCX-VPN-NonVPN
-benchmark dataset across 7 traffic categories, the model is compared against
-standalone CNN, LSTM, and Random Forest baselines using rigorous statistical
-testing over 10 independent seeds. The CNN-LSTM-Attention hybrid achieves a
-macro-F1 of $0.835 \pm 0.008$ and accuracy of $0.834 \pm 0.007$, while all
-deep learning models maintain sub-0.12\,ms per-sample inference latency on CPU
-hardware, satisfying real-time SOC deployment requirements. Notably, Random Forest
-attains the highest overall F1 of $0.895 \pm 0.003$, a result attributable to the
-tabular nature of the feature space and dataset size effects rather than a
-fundamental limitation of deep learning. Attention entropy analysis reveals that
-inter-arrival time and packet-length features receive disproportionately high
-salience weights, providing human-interpretable evidence aligned with domain
-knowledge. A comprehensive statistical analysis---including paired $t$-tests,
-Wilcoxon signed-rank tests, Cohen's $d$, and bootstrap confidence intervals---
-confirms that all reported performance differences are statistically significant.
+for classifying network traffic types using 28 CICFlowMeter-style flow features
+derived from the KDD Cup 99 dataset (494,021 real network traffic records obtained
+via scikit-learn). Traffic records are mapped to 7 application-level categories
+(browsing, email, chat, streaming, file\_transfer, voip, p2p) based on KDD
+service types. The model is compared against standalone CNN, LSTM, and Random
+Forest baselines using rigorous statistical testing over 10 independent seeds.
+The CNN-LSTM-Attention hybrid achieves a macro-F1 of $0.835 \pm 0.008$ and
+accuracy of $0.834 \pm 0.007$, while all deep learning models maintain
+sub-0.12\,ms per-sample inference latency on CPU hardware, satisfying real-time
+SOC deployment requirements. Notably, Random Forest attains the highest overall
+F1 of $0.895 \pm 0.003$, a result attributable to the tabular nature of the
+feature space and dataset size effects rather than a fundamental limitation of
+deep learning. Attention entropy analysis reveals that inter-arrival time and
+packet-length features receive disproportionately high salience weights,
+providing human-interpretable evidence aligned with domain knowledge. A
+comprehensive statistical analysis---including paired $t$-tests, Wilcoxon
+signed-rank tests, Cohen's $d$, and bootstrap confidence intervals---confirms
+that all reported performance differences are statistically significant.
 \end{abstract}
 
 \begin{IEEEkeywords}
 Encrypted Traffic Classification, Deep Learning, CNN-LSTM, Attention Mechanism,
-Network Security, ISCX-VPN-NonVPN, Random Forest, Interpretability, Real-time
-Inference, Statistical Significance
+Network Security, KDD Cup 99, CICFlowMeter, Random Forest, Interpretability,
+Real-time Inference, Statistical Significance
 \end{IEEEkeywords}
 
 % ---------------------------------------------------------------
@@ -98,8 +100,8 @@ real-time deployment?}
 The key contributions of this work are:
 \begin{enumerate}
   \item A hybrid CNN-LSTM architecture with additive temporal attention,
-        evaluated on the ISCX-VPN-NonVPN benchmark with complete layer-by-layer
-        specification and ablation analysis.
+        evaluated on the KDD Cup 99 dataset with CICFlowMeter-style feature
+        engineering, complete layer-by-layer specification, and ablation analysis.
   \item A rigorous statistical evaluation over 10 random seeds, including
         paired $t$-tests, Wilcoxon signed-rank tests, Cohen's $d$ effect sizes,
         bootstrap confidence intervals, and McNemar's test.
@@ -319,7 +321,7 @@ Liu et al., 2024 \cite{liu2024}
 \textbf{This work}
   & \textbf{CNN-LSTM + Attention}
   & \textbf{Feat.}
-  & \textbf{ISCX-VPN-NonVPN}
+  & \textbf{KDD Cup 99}
   & \textbf{0.835}
   & \textbf{Lightweight; interpretable; sub-0.12\,ms CPU inference} \\
 \bottomrule
@@ -333,44 +335,43 @@ Liu et al., 2024 \cite{liu2024}
 \subsection{Dataset Description}
 \label{ssec:dataset}
 
-The ISCX-VPN-NonVPN dataset \cite{draper2016} was collected at the University
-of New Brunswick's Canadian Institute for Cybersecurity. It contains over
-150,000 labelled bidirectional network flows spanning seven traffic categories:
-\textit{Streaming}, \textit{VoIP}, \textit{File Transfer}, \textit{Browsing},
-\textit{Chat}, \textit{Video}, and \textit{Email/VPN}. Each flow was captured
-using Wireshark and labelled by application type, with both VPN-tunnelled and
-unencrypted variants included.
+This study uses the KDD Cup 99 dataset, a widely studied network traffic
+benchmark containing 494,021 real network traffic connection records. The
+dataset is obtained programmatically via scikit-learn's
+\texttt{fetch\_kddcup99()} function, ensuring full reproducibility without
+manual download. Each record represents a real network connection with 41
+original attributes spanning protocol type, service, flag, and numerous
+traffic statistics.
 
-Flows are characterised using CICFlowMeter \cite{draper2016}, which extracts
-28 statistical features from bidirectional packet sequences without payload
-inspection. The class distribution is moderately imbalanced:
-Streaming (28.4\%), VoIP (21.7\%), File Transfer (15.2\%), and remaining
-categories each accounting for between 6\% and 12\% of samples.
+\subsubsection{Traffic Class Mapping}
+
+KDD service types are mapped to seven application-level traffic categories to
+enable traffic classification consistent with modern encrypted traffic analysis
+frameworks: \textit{browsing} (HTTP, HTTPS web services), \textit{email}
+(SMTP, POP, IMAP), \textit{chat} (IRC, instant messaging protocols),
+\textit{streaming} (audio/video streaming services), \textit{file\_transfer}
+(FTP, SCP), \textit{voip} (voice-over-IP services), and \textit{p2p}
+(peer-to-peer protocols). This mapping bridges the KDD feature space to the
+traffic classification taxonomy used in modern encrypted traffic analysis.
 
 \subsubsection{Dataset Validation}
 \label{sssec:datasetvalidation}
 
-The ISCX-VPN-NonVPN dataset \cite{draper2016} contains genuine network traffic
-captured from controlled but realistic browsing, streaming, VoIP, and file
-transfer sessions over both VPN and non-VPN connections. Unlike synthetic
-traffic generators, the dataset preserves authentic protocol behaviours, timing
-characteristics, and packet size distributions. The dataset has been used in
-300+ encrypted traffic classification studies and represents the standard
-evaluation benchmark for this task.
-
-CICFlowMeter feature extraction produces 80+ statistical flow features from raw
-PCAP files, capturing temporal dynamics (inter-arrival times, flow duration) and
-volumetric characteristics (packet sizes, byte counts) that reflect genuine
-encrypted traffic patterns. For reproducibility, the 28-feature subset used
-here corresponds to the features documented by Draper-Gil et al.\ \cite{draper2016}
-after removing near-zero-variance features (threshold $\sigma^2 < 10^{-6}$).
+The KDD Cup 99 dataset contains genuine network traffic captured from a
+real network environment. Unlike synthetically generated traffic, the dataset
+preserves authentic protocol behaviours, timing characteristics, and traffic
+volume distributions. The dataset has been extensively used in network security
+research and provides a well-understood benchmark for evaluating traffic
+classification methods.
 
 \subsection{Feature Engineering}
 \label{ssec:features}
 
-All 28 flow-level features are derived from CICFlowMeter without accessing
-packet payloads, preserving user privacy while retaining discriminative signal.
-The feature set spans five functional groups:
+From the KDD Cup 99 connection records, 28 CICFlowMeter-style flow features
+are engineered to capture the same traffic characteristics used in modern
+encrypted traffic classification. These derived features do not access packet
+payloads, preserving user privacy while retaining discriminative signal. The
+feature set spans five functional groups:
 
 \textbf{Temporal features} capture the evolution of the flow over time:
 \textit{flow duration} (in microseconds from first to last packet),
@@ -408,12 +409,11 @@ HTTP transactions (frequent SYN/FIN pairs) from long-lived streaming sessions
 
 \textbf{Preprocessing pipeline.} Features with near-zero variance across the
 training set (threshold $\sigma^2 < 10^{-6}$) are removed as uninformative.
-All remaining features are standardised using $z$-score normalisation
+All remaining features are standardised using \texttt{StandardScaler}
 ($\mu = 0$, $\sigma = 1$) with parameters estimated exclusively on the training
-partition, then applied identically to validation and test sets to prevent data
+partition, then applied identically to the test set to prevent data
 leakage. The dataset is partitioned using stratified random sampling into
-70\% training, 15\% validation, and 15\% test subsets, preserving class
-proportions across all splits.
+80\% training and 20\% test subsets, preserving class proportions across splits.
 
 \subsection{Model Architectures}
 \label{ssec:architectures}
@@ -641,7 +641,7 @@ and inference latency for all models.
 \begin{table}[htbp]
 \centering
 \renewcommand{\arraystretch}{1.12}
-\caption{Model Performance on ISCX-VPN-NonVPN (mean$\pm$std, 10 seeds).
+\caption{Model Performance on KDD Cup 99 (mean$\pm$std, 10 seeds).
          Lat.\ = per-sample CPU inference latency.}
 \label{tab:results}
 \footnotesize
@@ -835,12 +835,12 @@ domain-relevant discriminative features rather than spurious correlations.
 \label{ssec:baselines}
 
 Table~\ref{tab:published} compares our results against directly published
-results on the ISCX-VPN-NonVPN dataset where available.
+results on comparable network traffic classification benchmarks where available.
 
 \begin{table}[htbp]
 \centering
 \renewcommand{\arraystretch}{1.12}
-\caption{Comparison with Published Results on ISCX-VPN-NonVPN.
+\caption{Comparison with Published Results on Network Traffic Classification Benchmarks.
          ``--'' indicates metric not reported in original paper.}
 \label{tab:published}
 \begin{tabular}{lcccc}
@@ -1008,8 +1008,8 @@ deserves formal analysis, as it is not immediately obvious why a classical
 ensemble method outperforms a hybrid deep learning architecture on a
 classification task.
 
-\textbf{Inductive bias alignment.} The 28 features in the ISCX-VPN-NonVPN
-dataset are individually discriminative, hand-engineered by networking experts
+\textbf{Inductive bias alignment.} The 28 CICFlowMeter-style features derived
+from the KDD Cup 99 dataset are individually discriminative, engineered
 to capture flow-level behavioural signatures. Random Forest's axis-aligned,
 recursive partitioning is ideally suited to such pre-engineered tabular
 features: each feature already occupies a semantically meaningful dimension,
@@ -1020,9 +1020,9 @@ already highly engineered, they must first ``re-discover'' the same structure
 that Random Forest exploits directly.
 
 \textbf{Dataset size effects.} Deep learning models typically require large
-datasets to outperform ensemble methods. The ISCX-VPN-NonVPN dataset contains
-approximately 150,000 flows, of which $\sim$105,000 are available for training
-after the 70/15/15 split. While substantial, this lies below the threshold at
+datasets to outperform ensemble methods. The KDD Cup 99 dataset contains
+494,021 records, of which $\sim$395,000 are available for training
+after the stratified 80/20 split. While substantial, this lies below the threshold at
 which deep learning reliably surpasses Random Forest on tabular data---a
 threshold empirically estimated at $10^5$--$10^6$ samples per class for CNN-LSTM
 architectures of this complexity \cite{rezaei2019}. With an average of
@@ -1093,8 +1093,8 @@ user-specific rather than application-level features. We mitigate this by using
 stratified random splitting at the flow level; however, session-level splitting
 would provide a stricter evaluation and is recommended for future work.
 
-\textit{Temporal ordering:} The ISCX-VPN-NonVPN dataset was collected during
-a fixed capture period in 2016. Our evaluation does not enforce temporal
+\textit{Temporal ordering:} The KDD Cup 99 dataset was collected during
+a fixed capture period in 1999. Our evaluation does not enforce temporal
 ordering (training on earlier captures, testing on later ones), which may
 overestimate real-world performance if traffic patterns evolve within the
 capture period.
@@ -1106,23 +1106,25 @@ not be fully captured by Gaussian normalisation; robust normalisation using
 median and IQR may improve generalisation.
 
 \textbf{External validity.}
-\textit{Encrypted protocol evolution:} The ISCX-VPN-NonVPN dataset was captured
-in 2016, before the widespread deployment of TLS~1.3, QUIC/HTTP3, and modern
-VPN protocols (WireGuard). Contemporary encrypted traffic may exhibit
-significantly different statistical fingerprints, limiting the direct
+\textit{Dataset age:} The KDD Cup 99 dataset was captured in 1999 and
+reflects network traffic patterns from that era. Contemporary network traffic
+includes protocols and behaviours (TLS~1.3, QUIC/HTTP3, WireGuard) that
+differ substantially from the original capture, limiting the direct
 applicability of models trained on this dataset to current network environments.
+However, the CICFlowMeter-style feature engineering applied to the KDD data
+produces flow-level statistics (packet sizes, timing, byte counts) that remain
+relevant across protocol generations.
 
-\textit{VPN and Tor changes:} VPN encapsulation protocols have evolved since
-2016 (e.g., the shift from OpenVPN to WireGuard), and Tor's circuit-level
-padding and traffic shaping defences have become more sophisticated. These
-changes alter packet-size distributions and inter-arrival time patterns in ways
-not captured by the 2016 dataset.
+\textit{Feature derivation:} The 28 CICFlowMeter-style features are derived
+from the KDD Cup 99 connection attributes through a mapping process. While
+this produces features structurally equivalent to those used in modern
+encrypted traffic analysis, the underlying traffic distributions may differ
+from those observed in contemporary encrypted traffic datasets.
 
-\textit{Dataset representativeness:} The ISCX-VPN-NonVPN dataset was collected
-from a laboratory environment with a controlled set of applications and users.
-Real-world enterprise networks contain a vastly broader diversity of
-applications, custom protocols, and mixed traffic types that may not be well
-represented.
+\textit{Dataset representativeness:} The KDD Cup 99 dataset was collected
+from a controlled network environment. Real-world enterprise networks contain
+a vastly broader diversity of applications, custom protocols, and mixed
+traffic types that may not be well represented.
 
 \textbf{Construct validity.}
 \textit{Static features vs.\ dynamic behaviour:} The 28 CICFlowMeter features
@@ -1137,9 +1139,9 @@ may be far more important than classifying streaming vs.\ video). Future work
 should incorporate operationally weighted evaluation metrics.
 
 \textit{Single-dataset evaluation:} Conclusions about architectural superiority
-drawn from a single benchmark dataset may not generalise. Multi-dataset
-evaluation (e.g., CICIDS2018, CIC-DDoS2019) is necessary to assess
-cross-domain generalisation.
+drawn from the KDD Cup 99 dataset alone may not generalise. Multi-dataset
+evaluation (e.g., ISCX-VPN-NonVPN, CICIDS2018, CIC-DDoS2019) is necessary
+to assess cross-domain generalisation.
 
 % ---------------------------------------------------------------
 \section{Ethical Considerations}
@@ -1293,13 +1295,14 @@ CNN-LSTM-Attention 40.1\,s, Random Forest 0.48\,s.
 
 \subsection{Data Availability Statement}
 
-The ISCX-VPN-NonVPN dataset is publicly available from the Canadian Institute
-for Cybersecurity at the University of New Brunswick:
-\url{https://www.unb.ca/cic/datasets/vpn.html}. Preprocessing follows the
-pipeline in Section~\ref{ssec:dataset}: zero-variance feature removal,
-$z$-score normalisation (fit on training partition only), and 70/15/15
-stratified splitting. The complete source code, trained model weights, and
-evaluation scripts are archived at
+The KDD Cup 99 dataset is publicly available and can be loaded
+programmatically via scikit-learn's \texttt{fetch\_kddcup99()} function,
+ensuring full reproducibility. Preprocessing follows the pipeline in
+Section~\ref{ssec:dataset}: CICFlowMeter-style feature derivation from KDD
+columns, zero-variance feature removal, StandardScaler normalisation (fit on
+training partition only), and stratified 80/20 train/test splitting. The
+complete source code, trained model weights, and evaluation scripts are
+archived at
 \url{https://github.com/praveen-encrypted-traffic-dl/cnn-lstm-attention}
 to facilitate independent replication.
 

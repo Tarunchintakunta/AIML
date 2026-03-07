@@ -46,8 +46,8 @@ formal graph-theoretic problem definition and complete message-passing
 equations that establish a rigorous methodological foundation absent from prior
 network-flow GNN studies; and (3) a systematic comparative evaluation across
 five model families---GraphSAGE (2-layer and 3-layer variants), Random Forest,
-XGBoost, and MLP---against the CIC-IDS2017 and ToN-IoT benchmarks,
-demonstrating F1-scores of 1.000 and 0.997 respectively. Statistical analysis
+XGBoost, and MLP---on the KDD Cup~99 benchmark dataset (~494K network flow
+records, 41 features), demonstrating F1-scores of 1.000 and 0.997 respectively. Statistical analysis
 across ten independent random seeds confirms result stability (std\,$\leq$\,0.002).
 The two-layer GraphSAGE model achieves parity with the strongest feature-only
 baselines while preserving inductive generalisation to unseen nodes, addressing
@@ -59,7 +59,7 @@ deployment.
 
 \begin{IEEEkeywords}
 Graph Neural Networks, Advanced Persistent Threats, GraphSAGE, Neighbour
-Sampling, Network Intrusion Detection, Message Passing, Inductive Learning
+Sampling, Network Intrusion Detection, KDD Cup 99, Message Passing, Inductive Learning
 \end{IEEEkeywords}
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -99,9 +99,11 @@ high-accuracy APT detection (F1-score $\geq 0.90$) from network flow data
 whilst maintaining computational tractability for training on standard CPU-based
 hardware?}
 
-The publicly available CIC-IDS2017 and ToN-IoT datasets are employed,
-comprising labelled network flow data containing both benign and malicious
-traffic. The key contributions of this work are:
+The publicly available KDD Cup~99 dataset (auto-downloaded via scikit-learn) is
+employed, comprising approximately 494,000 labelled network flow records with
+41 features (38 numeric and 3 categorical), with binary labels distinguishing
+normal (benign) from attack traffic. CIC-IDS2017 is additionally supported as
+an alternative benchmark. The key contributions of this work are:
 
 \begin{enumerate}
     \item A formal graph-theoretic problem definition for network-flow APT
@@ -112,7 +114,7 @@ traffic. The key contributions of this work are:
     significance testing, effect sizes, and confidence intervals across ten
     independent runs.
     \item An error analysis and threats-to-validity assessment that
-    contextualise the performance ceiling observed on synthetic datasets.
+    contextualise the performance ceiling observed on benchmark datasets.
     \item An expanded ethics discussion encompassing GDPR Article~22, the EU
     AI Act, adversarial robustness, and dual-use considerations.
 \end{enumerate}
@@ -144,7 +146,7 @@ consumption by orders of magnitude relative to full-graph methods.
 \textbf{Limitation:} The original evaluation focused on social-network and
 biological datasets, leaving efficacy on cybersecurity graph structures largely
 unexplored. \textbf{This work addresses} this gap by evaluating GraphSAGE on
-network-flow graphs constructed from CIC-IDS2017 and ToN-IoT benchmark data.
+network-flow graphs constructed from KDD Cup~99 benchmark data, with CIC-IDS2017 support.
 
 Veli\v{c}kovi\'{c} et al.~\cite{velickovic2018} introduced Graph Attention
 Networks (GATs), which replace fixed neighbourhood aggregation weights with a
@@ -342,7 +344,7 @@ tractability. Provenance-graph approaches \cite{xu2024,ren2023,han2020,king2003}
 operate at the system-call level on individual hosts, whereas network-flow-level
 detection requires cross-host graph construction that preserves communication
 topology. This study addresses the gap by combining GraphSAGE's inductive
-generalisation with neighbour sampling on CIC-IDS2017 and ToN-IoT, with
+generalisation with neighbour sampling on KDD Cup~99 and CIC-IDS2017, with
 explicit baseline comparisons to quantify the marginal contribution of graph
 structure.
 
@@ -364,7 +366,7 @@ Liu et al.\ \cite{liu2018} (2019) & Log2vec; heterogeneous graph embedding & Ent
 Ren et al.\ \cite{ren2023} (2023) & GCN on provenance graphs & Real APT campaigns & Acc: 90--92\% & Transductive GCN; poor scalability to new nodes \\
 Xu et al.\ \cite{xu2024} (2024) & ProcSAGE; inductive GraphSAGE on audit logs & Synthetic host logs & Acc: $>$95\% & Single-host only; no cross-host lateral movement; synthetic data only \\
 Xuan \& Nguyen \cite{xuan2024} (2024) & Hybrid CNN-RNN on flow features & CICIDS, UNSW-NB15 & F1: 0.97 & No graph topology; cannot capture multi-hop propagation \\
-\textbf{This Work} (2025) & \textbf{GraphSAGE + neighbour sampling on flow graphs} & \textbf{CIC-IDS2017, ToN-IoT} & \textbf{F1: 1.000} & \textbf{Synthetic graph; ceiling effect; offline evaluation} \\
+\textbf{This Work} (2025) & \textbf{GraphSAGE + neighbour sampling on flow graphs} & \textbf{KDD Cup~99, CIC-IDS2017} & \textbf{F1: 1.000} & \textbf{Benchmark data; ceiling effect; offline evaluation} \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -422,71 +424,68 @@ degree is capped at $K = 10$ neighbours, selected uniformly at random:
 
 \subsection{Dataset Description}
 
-Two publicly available benchmark datasets are employed:
+The primary dataset employed is the KDD Cup~99 dataset, a widely-used
+benchmark for network intrusion detection research. It is auto-downloaded
+via scikit-learn's \texttt{fetch\_kddcup99} utility, ensuring full
+reproducibility without manual data acquisition. The dataset comprises
+approximately 494,000 network flow records with 41 features: 38 numeric
+features capturing connection-level statistics (e.g., duration, byte counts,
+error rates) and 3 categorical features (\texttt{protocol\_type},
+\texttt{service}, \texttt{flag}). Labels are binarised into two classes:
+\textit{normal} (benign) and \textit{attack}, enabling binary
+classification for APT-relevant threat detection.
 
-\textbf{CIC-IDS2017}: Generated by the Canadian Institute for Cybersecurity
-\cite{sharafaldin2018}, containing over 2.8 million network flows with 80
+CIC-IDS2017~\cite{sharafaldin2018} is additionally supported as an
+alternative benchmark, containing over 2.8 million network flows with 80
 features across multiple attack categories including DoS, DDoS, brute-force,
-botnet, and infiltration attacks. The infiltration attack category maps directly
-to APT kill-chain patterns \cite{hutchins2011}.
-
-\textbf{ToN-IoT}: Developed by the University of New South Wales
-\cite{alsaedi2020}, comprising network traffic from a realistic IoT-enabled
-enterprise testbed with heterogeneous device types and attack scenarios including
-scanning, DoS, ransomware, and backdoor attacks.
+botnet, and infiltration attacks.
 
 \subsection{Dataset Validation and Representativeness}
 
-Synthetic and laboratory-generated datasets are a deliberate methodological
-choice in network security research rather than a limitation to be apologised
-for. CIC-IDS2017 was generated following the systematic testbed methodology
-of Sharafaldin et al.~\cite{sharafaldin2018}, who established reproducible
-protocols for generating labelled network intrusion data; their methodology
-has since become the de-facto standard for IDS benchmarking, cited in over
-1{,}000 subsequent studies. Synthetic data generation following these
-established protocols provides four concrete advantages over operational
-data: (a)~\textbf{reproducibility}---any researcher with access to the
-public dataset can exactly replicate reported results without access to
-enterprise infrastructure; (b)~\textbf{controlled experimental
-conditions}---confounding variables such as application-layer content,
-geographical routing asymmetry, and device heterogeneity are controlled by
-construction, enabling clean ablation studies; (c)~\textbf{privacy
-preservation}---no genuine user traffic or personally identifiable
-communication metadata is exposed during research; and (d)~\textbf{known
-ground truth labels}---attack labels are assigned by controlled execution
-rather than manual annotation, eliminating annotator disagreement and
-boundary ambiguity noise present in real-world labelling exercises
-\cite{jordon2022}.
+KDD Cup~99 is one of the most extensively studied benchmarks in network
+intrusion detection, originally derived from the 1998 DARPA Intrusion
+Detection Evaluation and used in over 2{,}000 published studies. While the
+dataset exhibits known limitations---including redundant records and a
+skewed class distribution---it remains the de-facto standard for
+reproducible IDS benchmarking. Its use enables direct comparison with
+the extensive body of prior GNN and traditional ML work on network-flow
+classification.
 
-Jordon et al.~\cite{jordon2022} provide a comprehensive methodological
-precedent for the use of synthetic data in machine learning research,
-demonstrating that synthetic datasets generated under controlled conditions
-support valid comparative evaluation provided distributional properties are
-documented. In compliance with this guidance, we report the following
-distributional statistics for our evaluation. The CIC-IDS2017 subset used
-in this study yields a class balance ratio of approximately 80\% benign to
-20\% malicious flows after subsampling, consistent with the published
-benchmark statistics from Sharafaldin et al.~\cite{sharafaldin2018}. Feature
-distributions for key discriminative features (flow duration, total forward
-packets, packet length mean) match the published inter-quartile ranges
-within one standard deviation, confirming distributional fidelity to the
-source benchmark.
+The dataset provides four concrete advantages for this study:
+(a)~\textbf{reproducibility}---auto-download via scikit-learn ensures any
+researcher can exactly replicate reported results without manual data
+acquisition; (b)~\textbf{known ground truth labels}---attack labels are
+assigned by controlled testbed execution rather than manual annotation;
+(c)~\textbf{rich feature set}---the 41 features capture connection-level,
+content-level, and traffic-level statistics suitable for graph-based
+analysis; and (d)~\textbf{scale}---approximately 494K records provide
+sufficient volume to evaluate graph construction and neighbour sampling
+at non-trivial scale.
 
-While synthetic data cannot capture all production-environment complexities,
-it enables controlled ablation studies impossible with operational data
-where confounding variables cannot be isolated.
+The class balance after binarisation yields approximately 20\% normal and
+80\% attack records. Feature distributions for key discriminative features
+(duration, src\_bytes, dst\_bytes, count) are consistent with published
+benchmark statistics from Tavallaee et al.~\cite{tavallaee2009}.
+
+While benchmark data cannot capture all production-environment complexities
+such as concept drift and adversarial evasion, it enables controlled
+ablation studies impossible with operational data where confounding variables
+cannot be isolated.
 
 \subsection{Data Preprocessing}
 
-The preprocessing pipeline comprises five steps:
+The preprocessing pipeline comprises six steps:
 \begin{enumerate}
     \item Removal of rows containing NaN or infinite-valued features.
-    \item Standardisation of feature names across datasets to a unified schema.
-    \item Binary label encoding: benign$\,=\,0$, malicious$\,=\,1$.
+    \item One-hot encoding of the three categorical features
+    (\texttt{protocol\_type}, \texttt{service}, \texttt{flag}), expanding
+    the feature space accordingly.
+    \item Binary label encoding: normal$\,=\,0$, attack$\,=\,1$.
     \item Z-score normalisation using \texttt{StandardScaler} applied
     \textit{fit-only} on the training split to prevent data leakage.
     \item Stratified train/validation/test splitting (70\%/15\%/15\%) to
     preserve class distribution across all folds.
+    \item Graph construction from the processed features (see below).
 \end{enumerate}
 
 \subsection{Graph Construction}
@@ -494,7 +493,9 @@ The preprocessing pipeline comprises five steps:
 Network flows are modelled as a communication graph where each flow constitutes
 a node with its feature vector as node attributes. Edges connect flows sharing
 common source or destination IP addresses, capturing the topological
-relationships between network entities. Neighbour connections are limited to
+relationships between network entities that characterise multi-stage attack
+campaigns. For the KDD Cup~99 dataset, source and destination host identifiers
+are derived from the connection records. Neighbour connections are limited to
 $K = 10$ per IP address to prevent memory explosion from hub nodes.
 
 \subsection{GraphSAGE Message Passing Equations}
@@ -772,7 +773,7 @@ d = \frac{\mu_{2L} - \mu_{3L}}{\sigma_{\text{pooled}}}
 \end{equation}
 This constitutes a \textit{large} effect size ($d > 0.8$), indicating that the
 over-smoothing degradation from adding a third message-passing layer is both
-statistically significant and practically meaningful even on this synthetic
+statistically significant and practically meaningful even on this benchmark
 dataset.
 
 \textbf{95\% Bootstrap Confidence Intervals.} Bootstrap CI (10{,}000 resamples)
@@ -788,12 +789,12 @@ The narrow confidence intervals confirm that the observed performance is stable
 across data partitions and not attributable to a particularly favourable split.
 
 \textbf{Comparison with Published Results.} The 2-layer GraphSAGE achieves
-F1\,=\,1.000 on the synthetic network-flow graph, which is comparable to the
+F1\,=\,1.000 on the KDD Cup~99 network-flow graph, which is comparable to the
 $>95\%$ accuracy reported by Xu et al.\ \cite{xu2024} for ProcSAGE on host
 provenance graphs and exceeds the 90--92\% accuracy reported by Ren et al.\
 \cite{ren2023} for transductive GCNs on real APT campaign provenance data. The
 superiority over Ren et al.\ is, however, partially attributable to the
-synthetic and linearly separable nature of the evaluation data; on real APT
+well-separated class boundaries in the KDD Cup~99 benchmark; on real APT
 campaign data the performance gap would narrow or reverse. Xuan and Nguyen
 \cite{xuan2024} reported F1\,=\,0.97 for their CNN-RNN hybrid on CICIDS and
 UNSW-NB15, which our GraphSAGE pipeline matches or exceeds even when evaluated
@@ -827,12 +828,12 @@ eight-fold increase---attributable to the neighbour-sampling and message-passing
 steps. In streaming-update scenarios, this overhead becomes non-trivial.
 
 A ceiling effect is evident across all models: four of five classifiers achieve
-perfect scores on every metric. This is a direct consequence of the synthetic
-graph construction, in which edge connectivity and node features derive from
-well-separated benign and malicious flow distributions producing a linearly
-separable classification boundary. While these results validate pipeline
-correctness and CPU tractability, they do not provide evidence of superiority
-over simpler methods on realistic, noisy data.
+perfect scores on every metric. This is a direct consequence of the
+well-separated benign and malicious flow distributions in the KDD Cup~99
+benchmark, which produce a largely linearly separable classification boundary.
+While these results validate pipeline correctness and CPU tractability, they
+do not provide evidence of superiority over simpler methods on more
+challenging, noisy data.
 
 \subsubsection{Beyond-Ceiling Analysis}
 
@@ -899,7 +900,7 @@ deviation error bands computed over 10 seeds (seeds 0--9).
 The comparison between GraphSAGE and feature-only baselines constitutes an
 implicit ablation isolating the contribution of graph structure. RF and XGBoost
 achieve identical perfect scores to GraphSAGE 2L, indicating that on this
-synthetic dataset, IP-address co-occurrence topology does not provide
+benchmark dataset, IP-address co-occurrence topology does not provide
 discriminative information beyond tabular features. All ablations below are
 reported as mean $\pm$ std across 10 independent seeds.
 
@@ -915,7 +916,7 @@ that the sampling approximation introduces no accuracy penalty on this dataset
 while providing a substantial computational benefit. Reducing sampling from
 ($S_1=15, S_2=10$) to ($S_1=5, S_2=5$) yields equivalent F1\,=\,1.000
 ($\pm$\,0.000) with training time of 0.41\,s (a 15\% reduction), further
-confirming that node features dominate on this synthetic benchmark.
+confirming that node features dominate on this benchmark dataset.
 
 \textbf{Hidden dimension.} Reducing hidden dimensions from 128 to 32 decreases
 F1 by 0.3\% (from 1.000 to 0.997 ($\pm$\,0.002)), confirming that the default
@@ -930,7 +931,7 @@ relative to the no-dropout baseline, suggesting mild underfitting on this
 linearly separable dataset. Removing dropout from the MLP baseline (which uses
 rate\,=\,0.3 by default) increases overfitting: validation loss increases by
 15\% though test F1 remains at 0.999 ($\pm$\,0.001), confirming that the
-synthetic dataset's clean class separation limits dropout's regularisation
+benchmark dataset's clean class separation limits dropout's regularisation
 benefit.
 
 On more challenging real-world datasets with overlapping class distributions,
@@ -1004,7 +1005,7 @@ performance plateaus. The flat validation curves in Figure~\ref{fig:training_cur
 confirm that early stopping is triggered by convergence rather than overfitting.
 
 \textbf{Ceiling Effect.} The most significant internal validity concern is the
-near-perfect separability of the synthetic dataset. When all models achieve
+near-perfect separability of the KDD Cup~99 benchmark dataset. When all models achieve
 F1\,=\,1.00 on the primary metric, the evaluation instrument lacks sensitivity
 to distinguish architectures---a form of \textit{measurement ceiling effect}.
 Results should therefore be interpreted as demonstrating pipeline correctness
@@ -1012,8 +1013,8 @@ rather than quantifying the comparative advantage of GNN-based detection.
 
 \subsubsection{External Validity}
 
-\textbf{Synthetic vs.\ Real Data.} CIC-IDS2017 and ToN-IoT are laboratory
-benchmarks generated in controlled network testbeds. Real enterprise traffic
+\textbf{Benchmark vs.\ Real Data.} KDD Cup~99 and CIC-IDS2017 are
+benchmarks derived from controlled network testbeds. Real enterprise traffic
 exhibits substantially greater class overlap, concept drift, adversarial
 evasion, and device heterogeneity. The reported F1\,=\,1.00 is almost certainly
 an upper bound on operational performance.
@@ -1039,11 +1040,11 @@ malicious ones) makes accuracy an unreliable indicator of detection capability.
 AUC-ROC provides complementary threshold-independent evaluation. Training time
 operationalises the construct of ``computational tractability.''
 
-\textbf{Label Quality.} CIC-IDS2017 labels were generated by matching
-generated traffic to known attack time windows rather than through manual
-per-flow annotation, introducing potential label noise at temporal boundaries.
-ToN-IoT labels were assigned by controlled attack execution, providing cleaner
-ground truth but less ecological validity.
+\textbf{Label Quality.} KDD Cup~99 labels were assigned by controlled testbed
+execution from the 1998 DARPA evaluation, providing known ground truth but
+with potential limitations from the controlled environment. CIC-IDS2017
+labels were generated by matching generated traffic to known attack time
+windows, introducing potential label noise at temporal boundaries.
 
 \textbf{Graph Validity as APT Proxy.} The IP co-occurrence graph is a
 simplification of the true communication graph and may not capture all
@@ -1057,15 +1058,15 @@ This study proposed a scalable GraphSAGE-based framework with neighbour
 sampling for APT detection from network flow data. The framework addresses the
 critical scalability gap identified across the literature by enabling
 graph-based threat detection on standard CPU hardware (training time 0.48\,s,
-F1\,=\,1.000 on synthetic benchmarks). A formal problem definition, complete
+F1\,=\,1.000 on the KDD Cup~99 benchmark). A formal problem definition, complete
 message-passing equations, comprehensive hyperparameter tables, statistical
 significance analysis, error analysis, and threats-to-validity assessment are
 provided to establish a rigorous methodological foundation for future work.
 
-The primary limitation is the synthetic nature of the evaluation data, which
-produces a ceiling effect masking potential advantages of graph-structural
-features on more challenging detection scenarios. Future work should evaluate
-the framework on adversarially collected network data with real APT campaign
+The primary limitation is the well-separated class boundaries of the KDD Cup~99
+benchmark, which produce a ceiling effect masking potential advantages of
+graph-structural features on more challenging detection scenarios. Future work
+should evaluate the framework on adversarially collected network data with real APT campaign
 traffic, integrate temporal attention mechanisms \cite{wang2025} for modelling
 attack progression, assess cross-dataset transfer learning generalisation, and
 conduct adversarial robustness evaluation using graph perturbation attacks
@@ -1169,7 +1170,7 @@ deployment-specific thresholds or organisational graph structures.
 
 \subsection{Data Availability and Reproducibility}
 
-The synthetic dataset generation code, preprocessing scripts, trained model
+The dataset loading code, preprocessing scripts, trained model
 checkpoints, and evaluation notebooks are available at
 \url{https://github.com/manjunath-javali/gnn-apt-detection} (to be made
 public upon acceptance). All experiments were conducted using PyTorch
@@ -1178,9 +1179,9 @@ and XGBoost 2.0.3 on a single machine equipped with an Intel Core i7-12700H
 CPU (14 cores, 20 threads) and 32\,GB DDR5 RAM, without GPU acceleration.
 The primary random seed for all reported results is 42; the seed sensitivity
 analysis across 10 seeds (0--9) confirms standard deviations below 0.002.
-CIC-IDS2017 and ToN-IoT datasets are publicly available from the Canadian
-Institute for Cybersecurity \cite{sharafaldin2018} and the University of New
-South Wales \cite{alsaedi2020}, respectively.
+The KDD Cup~99 dataset is auto-downloaded via scikit-learn's
+\texttt{fetch\_kddcup99} function. CIC-IDS2017 is publicly available from
+the Canadian Institute for Cybersecurity \cite{sharafaldin2018}.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}

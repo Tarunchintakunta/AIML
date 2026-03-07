@@ -41,9 +41,9 @@ class SHAPExplainer:
         self.model = model
         self.feature_names = feature_names
         self.modality_ranges = modality_ranges or {
-            "text": (0, 20),
-            "url": (20, 30),
-            "temporal": (30, 35),
+            "url": (0, 10),
+            "content": (10, 20),
+            "external": (20, 30),
         }
         # Create SHAP explainer
         self.explainer = shap.TreeExplainer(model)
@@ -148,9 +148,9 @@ class LIMEExplainer:
         self.model = model
         self.feature_names = feature_names
         self.modality_ranges = modality_ranges or {
-            "text": (0, 20),
-            "url": (20, 30),
-            "temporal": (30, 35),
+            "url": (0, 10),
+            "content": (10, 20),
+            "external": (20, 30),
         }
         self.explainer = lime.lime_tabular.LimeTabularExplainer(
             training_data=X_train,
@@ -183,7 +183,7 @@ class LIMEExplainer:
         return {"explanation": exp, "feature_weights": df}
 
     def batch_explain(self, X: np.ndarray, n_instances: int = 50,
-                      num_features: int = 35,
+                      num_features: int = 30,
                       num_samples: int = 500) -> np.ndarray:
         """Compute LIME importance for multiple instances.
 
@@ -325,6 +325,7 @@ def print_consistency_report(consistency: dict) -> None:
 # ---------------------------------------------------------------------------
 def run_xai_pipeline(model, X_train: np.ndarray, X_test: np.ndarray,
                      feature_names: list,
+                     modality_ranges: Optional[dict] = None,
                      n_lime_instances: int = 50,
                      shap_background_size: int = 200) -> dict:
     """Run complete XAI analysis: SHAP + LIME + consistency.
@@ -350,7 +351,8 @@ def run_xai_pipeline(model, X_train: np.ndarray, X_test: np.ndarray,
     print("\n[XAI] Computing SHAP values...")
     # Use underlying model if wrapped in our class
     raw_model = model.model if hasattr(model, "model") else model
-    shap_exp = SHAPExplainer(raw_model, feature_names)
+    shap_exp = SHAPExplainer(raw_model, feature_names,
+                             modality_ranges=modality_ranges)
 
     # Use a subsample for SHAP to keep it tractable
     n_shap = min(shap_background_size, len(X_test))
@@ -366,7 +368,8 @@ def run_xai_pipeline(model, X_train: np.ndarray, X_test: np.ndarray,
     # ---- LIME ----
     print(f"\n[XAI] Computing LIME explanations ({n_lime_instances} instances)...")
     predict_fn = model if hasattr(model, "predict_proba") else model.model
-    lime_exp = LIMEExplainer(predict_fn, X_train, feature_names)
+    lime_exp = LIMEExplainer(predict_fn, X_train, feature_names,
+                             modality_ranges=modality_ranges)
     # Compute LIME batch once, reuse for both feature and modality importance
     lime_batch = lime_exp.batch_explain(X_test, n_instances=n_lime_instances)
     lime_feat_imp = lime_exp.get_feature_importance(

@@ -5,8 +5,13 @@ main.py - Full Pipeline for SIEM Alert Triage with Cost-Sensitive ML
 Project 9: ML for SIEM Alert Triage
 Student: Yogita
 
+Uses REAL NSL-KDD dataset (auto-downloaded) with 3-class triage labels:
+    0 = False Positive   (normal traffic)
+    1 = Indeterminate    (probe / low-severity attacks)
+    2 = True Positive    (DoS, R2L, U2R / high-severity attacks)
+
 Pipeline steps:
-    1. Generate synthetic SIEM alert data (CIC-IDS2017 / NSL-KDD / UNSW-NB15)
+    1. Download & preprocess NSL-KDD dataset
     2. Train individual models (RF, XGBoost, Isolation Forest)
     3. Build stacking ensemble with LR meta-learner
     4. Evaluate all models (F-beta, cost, alert reduction)
@@ -14,8 +19,9 @@ Pipeline steps:
     6. Generate all visualisations
 
 Usage:
-    python main.py --synthetic
-    python main.py --synthetic --n_samples 30000
+    python main.py
+    python main.py --random_state 123
+    python main.py --skip_shap
 """
 
 import argparse
@@ -36,9 +42,8 @@ if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
 from data_loader import (
-    generate_synthetic_siem_data,
+    load_nsl_kdd,
     prepare_data,
-    FEATURE_NAMES,
     CLASS_NAMES,
 )
 from model import (
@@ -67,14 +72,6 @@ def parse_args():
         description="ML for SIEM Alert Triage - Project 9 (Yogita)",
     )
     parser.add_argument(
-        "--synthetic", action="store_true",
-        help="Use synthetic data (required for reproducible demo)",
-    )
-    parser.add_argument(
-        "--n_samples", type=int, default=20000,
-        help="Number of synthetic samples to generate (default: 20000)",
-    )
-    parser.add_argument(
         "--random_state", type=int, default=42,
         help="Random seed (default: 42)",
     )
@@ -82,6 +79,11 @@ def parse_args():
         "--output_dir", type=str,
         default=os.path.join(PROJECT_DIR, "outputs"),
         help="Directory for output artefacts",
+    )
+    parser.add_argument(
+        "--data_dir", type=str,
+        default=os.path.join(PROJECT_DIR, "data"),
+        help="Directory to cache downloaded datasets",
     )
     parser.add_argument(
         "--skip_shap", action="store_true",
@@ -97,32 +99,26 @@ def main():
     print("=" * 70)
     print("  Project 9: ML for SIEM Alert Triage")
     print("  Student: Yogita")
+    print("  Dataset: NSL-KDD (real intrusion detection data)")
     print("=" * 70)
 
     # ------------------------------------------------------------------
-    # Step 1: Data Generation
+    # Step 1: Load Real Dataset
     # ------------------------------------------------------------------
-    print("\n[Step 1/6] Generating synthetic SIEM alert data ...")
+    print("\n[Step 1/6] Loading NSL-KDD dataset ...")
     t0 = time.time()
 
-    if not args.synthetic:
-        print("  NOTE: --synthetic flag not set. Using synthetic data anyway")
-        print("        (real datasets require separate download).")
-
-    df = generate_synthetic_siem_data(
-        n_samples=args.n_samples,
-        random_state=args.random_state,
-        dataset_name="combined",
-    )
-    print(f"  Generated {len(df):,} samples in {time.time()-t0:.1f}s")
+    df = load_nsl_kdd(data_dir=args.data_dir)
+    print(f"  Loaded {len(df):,} samples in {time.time()-t0:.1f}s")
+    print(f"  Features: {len([c for c in df.columns if c not in ('label', 'source_dataset', 'split')])}")
     print(f"  Class distribution:")
     for label, name in enumerate(CLASS_NAMES):
         count = (df["label"] == label).sum()
         print(f"    {name:20s}: {count:6,} ({count/len(df):6.1%})")
-    print(f"  Dataset sources: {df['source_dataset'].value_counts().to_dict()}")
+    print(f"  Dataset source: {df['source_dataset'].value_counts().to_dict()}")
 
-    # Save raw data
-    csv_path = os.path.join(args.output_dir, "synthetic_siem_data.csv")
+    # Save processed data
+    csv_path = os.path.join(args.output_dir, "nsl_kdd_processed.csv")
     df.to_csv(csv_path, index=False)
     print(f"  [saved] {csv_path}")
 
@@ -219,7 +215,6 @@ def main():
             print(f"  SHAP computed for {n_shap} samples in "
                   f"{time.time()-t0:.1f}s")
 
-            # Also get SHAP for stacking's XGBoost component if possible
         except ImportError:
             print("  WARNING: shap not installed. Skipping SHAP analysis.")
         except Exception as e:
@@ -276,6 +271,7 @@ def main():
     print("\n" + "=" * 70)
     print("  PIPELINE COMPLETE")
     print("=" * 70)
+    print(f"  Dataset: NSL-KDD ({len(df):,} real samples)")
     print(f"  Best model: {best['model_name']}")
     print(f"    F-beta(2) macro:   {best['fbeta_macro']:.4f}")
     print(f"    Total cost:        {best['total_cost']:,.0f} "

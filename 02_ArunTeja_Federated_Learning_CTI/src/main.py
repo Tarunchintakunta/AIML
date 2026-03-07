@@ -2,27 +2,44 @@
 Main entry point for Federated Learning CTI project.
 
 Usage:
-    python main.py --synthetic
-    python main.py --data_path /path/to/unswnb15/ --dataset unswnb15
+    python main.py                           # auto-downloads NSL-KDD
+    python main.py --dataset kddcup99        # auto-downloads KDD Cup 99
+    python main.py --data_path /path/to/csv/ # use local CSV dataset
 """
 
 import argparse
 import os
 import json
 
-from data_loader import generate_synthetic_data
+from data_loader import download_and_prepare_data, load_local_dataset
 from train import run_federated_training, run_centralised_baseline
 from visualize import (plot_fl_convergence, plot_dp_tradeoff,
                        plot_aggregation_comparison, plot_confusion_matrix)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Federated Learning for CTI Sharing')
-    parser.add_argument('--synthetic', action='store_true', help='Use synthetic data')
-    parser.add_argument('--n_clients', type=int, default=5, help='Number of FL clients')
-    parser.add_argument('--n_rounds', type=int, default=20, help='FL communication rounds')
-    parser.add_argument('--local_epochs', type=int, default=5, help='Local training epochs')
-    parser.add_argument('--lr', type=float, default=0.01, help='Learning rate')
+    parser = argparse.ArgumentParser(
+        description='Federated Learning for CTI Sharing')
+    parser.add_argument('--dataset', type=str, default='nslkdd',
+                        choices=['nslkdd', 'kddcup99'],
+                        help='Real dataset to auto-download (default: nslkdd)')
+    parser.add_argument('--data_path', type=str, default=None,
+                        help='Path to local CSV dataset directory '
+                             '(overrides --dataset)')
+    parser.add_argument('--label_col', type=str, default='label',
+                        help='Label column name for local datasets')
+    parser.add_argument('--n_clients', type=int, default=5,
+                        help='Number of FL clients')
+    parser.add_argument('--alpha', type=float, default=0.5,
+                        help='Dirichlet alpha for non-IID partitioning')
+    parser.add_argument('--n_rounds', type=int, default=20,
+                        help='FL communication rounds')
+    parser.add_argument('--local_epochs', type=int, default=5,
+                        help='Local training epochs')
+    parser.add_argument('--lr', type=float, default=0.01,
+                        help='Learning rate')
+    parser.add_argument('--max_samples', type=int, default=50000,
+                        help='Maximum samples to use')
     parser.add_argument('--output_dir', type=str, default='results')
     args = parser.parse_args()
 
@@ -33,12 +50,24 @@ def main():
     print("Federated Learning for Privacy-Preserving CTI Sharing")
     print("=" * 60)
 
-    # Load data
-    print("\nUsing synthetic data for demonstration...")
-    partitions, test_data = generate_synthetic_data(
-        n_samples=10000, n_features=30, n_clients=args.n_clients
-    )
-    input_dim = 30
+    # ------------------------------------------------------------------
+    # Load REAL data
+    # ------------------------------------------------------------------
+    if args.data_path is not None:
+        partitions, test_data, input_dim = load_local_dataset(
+            data_path=args.data_path,
+            label_col=args.label_col,
+            n_clients=args.n_clients,
+            alpha=args.alpha,
+            max_samples=args.max_samples,
+        )
+    else:
+        partitions, test_data, input_dim = download_and_prepare_data(
+            dataset=args.dataset,
+            n_clients=args.n_clients,
+            alpha=args.alpha,
+            max_samples=args.max_samples,
+        )
 
     for i, (f, l) in enumerate(partitions):
         print(f"  Client {i+1}: {len(f)} samples, "
@@ -130,7 +159,8 @@ def main():
     print(f"\n{'='*60}")
     print("FINAL SUMMARY")
     print("=" * 60)
-    print(f"\n{'Method':<20} {'F1':<10} {'Acc':<10} {'Prec':<10} {'Recall':<10} {'Time(s)':<10}")
+    print(f"\n{'Method':<20} {'F1':<10} {'Acc':<10} "
+          f"{'Prec':<10} {'Recall':<10} {'Time(s)':<10}")
     print("-" * 70)
     for name, m in agg_results.items():
         t = m.get('training_time', 0)
@@ -145,7 +175,9 @@ def main():
             'precision': m['precision'], 'recall': m['recall'],
             'training_time': m.get('training_time', 0),
         }
-    save_data['dp_tradeoff'] = {'epsilons': epsilons, 'f1_scores': dp_f1_scores}
+    save_data['dp_tradeoff'] = {
+        'epsilons': epsilons, 'f1_scores': dp_f1_scores,
+    }
 
     with open(os.path.join(args.output_dir, 'results.json'), 'w') as f:
         json.dump(save_data, f, indent=2)

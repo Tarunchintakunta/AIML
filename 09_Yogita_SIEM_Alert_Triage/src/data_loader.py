@@ -1,205 +1,207 @@
 """
-data_loader.py - Synthetic SIEM Alert Data Generator
-=====================================================
-Generates synthetic SIEM alert datasets modeled after CIC-IDS2017,
-NSL-KDD, and UNSW-NB15 with realistic class imbalance.
+data_loader.py - Real Dataset Loader for SIEM Alert Triage
+===========================================================
+Downloads and preprocesses the NSL-KDD dataset, mapping its intrusion
+labels to 3-class SIEM triage categories:
 
-3-Class Labels:
-    0 = False Positive  (85%)
-    1 = Indeterminate   (10%)
-    2 = True Positive   ( 5%)
+    0 = False Positive   (normal traffic)
+    1 = Indeterminate    (probe / low-severity attacks)
+    2 = True Positive    (DoS, R2L, U2R / high-severity attacks)
 
-20 features total capturing network traffic and alert metadata.
+Primary source: NSL-KDD from GitHub (KDDTrain+.txt, KDDTest+.txt)
+Fallback: sklearn.datasets.fetch_kddcup99
 """
 
+import os
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
-
 # ---------------------------------------------------------------------------
-# Feature definitions
+# NSL-KDD column definitions
 # ---------------------------------------------------------------------------
-FEATURE_NAMES = [
-    "alert_severity",          # 1-5 ordinal
-    "src_port",                # source port number
-    "dst_port",               # destination port number
-    "protocol_encoded",        # encoded protocol (TCP/UDP/ICMP/Other)
-    "packet_count",            # packets in session
-    "byte_count",              # total bytes transferred
-    "duration",                # session duration (seconds)
-    "alert_type_encoded",      # encoded alert category
-    "time_of_day",             # hour of alert (0-23)
-    "day_of_week",             # day (0=Mon, 6=Sun)
-    "src_ip_entropy",          # entropy of source IP distribution
-    "dst_ip_entropy",          # entropy of destination IP distribution
-    "flag_count",              # TCP flag anomaly count
-    "payload_size_mean",       # mean payload size
-    "payload_size_std",        # std-dev of payload size
-    "connection_rate",         # connections per minute from source
-    "failed_login_count",      # failed logins in window
-    "dns_query_count",         # DNS queries in window
-    "is_internal_src",         # 1 if source is internal
-    "reputation_score",        # threat-intel reputation (0-100)
+NSL_KDD_COLUMNS = [
+    "duration", "protocol_type", "service", "flag",
+    "src_bytes", "dst_bytes", "land", "wrong_fragment", "urgent",
+    "hot", "num_failed_logins", "logged_in", "num_compromised",
+    "root_shell", "su_attempted", "num_root", "num_file_creations",
+    "num_shells", "num_access_files", "num_outbound_cmds",
+    "is_host_login", "is_guest_login",
+    "count", "srv_count", "serror_rate", "srv_serror_rate",
+    "rerror_rate", "srv_rerror_rate", "same_srv_rate", "diff_srv_rate",
+    "srv_diff_host_rate", "dst_host_count", "dst_host_srv_count",
+    "dst_host_same_srv_rate", "dst_host_diff_srv_rate",
+    "dst_host_same_src_port_rate", "dst_host_srv_diff_host_rate",
+    "dst_host_serror_rate", "dst_host_srv_serror_rate",
+    "dst_host_rerror_rate", "dst_host_srv_rerror_rate",
+    "label", "difficulty",
 ]
 
+CATEGORICAL_COLS = ["protocol_type", "service", "flag"]
+
 CLASS_NAMES = ["False Positive", "Indeterminate", "True Positive"]
-CLASS_DISTRIBUTION = [0.85, 0.10, 0.05]  # FP, Indet, TP
+
+# ---------------------------------------------------------------------------
+# NSL-KDD label -> SIEM triage mapping
+# ---------------------------------------------------------------------------
+# Probe attacks (low severity) -> Indeterminate (class 1)
+PROBE_ATTACKS = {
+    "nmap", "ipsweep", "portsweep", "satan", "saint", "mscan",
+}
+
+# High-severity attacks -> True Positive (class 2)
+# Includes DoS, R2L, U2R
+HIGH_SEVERITY_ATTACKS = {
+    # DoS
+    "neptune", "smurf", "back", "teardrop", "pod", "land",
+    "apache2", "udpstorm", "processtable", "mailbomb",
+    # R2L
+    "guess_passwd", "ftp_write", "imap", "phf", "multihop",
+    "warezmaster", "warezclient", "spy", "xlock", "xsnoop",
+    "snmpguess", "snmpgetattack", "httptunnel", "sendmail",
+    "named", "worm",
+    # U2R
+    "buffer_overflow", "rootkit", "loadmodule", "perl",
+    "sqlattack", "xterm", "ps", "httptunnel",
+}
+
+NSL_KDD_TRAIN_URL = (
+    "https://raw.githubusercontent.com/defcom17/NSL_KDD/master/KDDTrain%2B.txt"
+)
+NSL_KDD_TEST_URL = (
+    "https://raw.githubusercontent.com/defcom17/NSL_KDD/master/KDDTest%2B.txt"
+)
 
 
-def _generate_class_features(n_samples: int, label: int,
-                             rng: np.random.Generator) -> np.ndarray:
-    """Generate feature matrix for a single class with class-specific
-    distributional properties so that the problem is learnable but not
-    trivially separable."""
-
-    X = np.zeros((n_samples, 20))
-
-    if label == 0:  # False Positive ------------------------------------------
-        X[:, 0] = rng.choice([1, 2, 3], size=n_samples, p=[0.5, 0.35, 0.15])
-        X[:, 1] = rng.integers(1024, 65535, size=n_samples)
-        X[:, 2] = rng.choice([80, 443, 8080, 8443, 53],
-                              size=n_samples, p=[0.3, 0.3, 0.15, 0.15, 0.1])
-        X[:, 3] = rng.choice([0, 1, 2, 3], size=n_samples,
-                              p=[0.6, 0.25, 0.1, 0.05])
-        X[:, 4] = rng.exponential(50, size=n_samples) + 1
-        X[:, 5] = rng.exponential(5000, size=n_samples) + 100
-        X[:, 6] = rng.exponential(10, size=n_samples) + 0.1
-        X[:, 7] = rng.choice(range(10), size=n_samples)
-        X[:, 8] = rng.integers(0, 24, size=n_samples)
-        X[:, 9] = rng.integers(0, 7, size=n_samples)
-        X[:, 10] = rng.normal(3.5, 0.8, size=n_samples)
-        X[:, 11] = rng.normal(3.0, 0.7, size=n_samples)
-        X[:, 12] = rng.poisson(1, size=n_samples)
-        X[:, 13] = rng.normal(500, 200, size=n_samples)
-        X[:, 14] = rng.exponential(100, size=n_samples)
-        X[:, 15] = rng.exponential(5, size=n_samples) + 0.5
-        X[:, 16] = rng.poisson(0.3, size=n_samples)
-        X[:, 17] = rng.poisson(5, size=n_samples)
-        X[:, 18] = rng.choice([0, 1], size=n_samples, p=[0.3, 0.7])
-        X[:, 19] = rng.normal(15, 10, size=n_samples)
-
-    elif label == 1:  # Indeterminate -----------------------------------------
-        X[:, 0] = rng.choice([2, 3, 4], size=n_samples, p=[0.3, 0.45, 0.25])
-        X[:, 1] = rng.integers(1024, 65535, size=n_samples)
-        X[:, 2] = rng.choice([80, 443, 22, 3389, 445],
-                              size=n_samples, p=[0.2, 0.2, 0.25, 0.2, 0.15])
-        X[:, 3] = rng.choice([0, 1, 2, 3], size=n_samples,
-                              p=[0.4, 0.3, 0.2, 0.1])
-        X[:, 4] = rng.exponential(120, size=n_samples) + 5
-        X[:, 5] = rng.exponential(15000, size=n_samples) + 500
-        X[:, 6] = rng.exponential(30, size=n_samples) + 1.0
-        X[:, 7] = rng.choice(range(10), size=n_samples)
-        # Indeterminate alerts slightly more common in evening/night
-        p_indet_hour = np.array([0.025]*8 + [0.05]*4 + [0.025]*4 + [0.075]*4 + [0.05]*4)
-        p_indet_hour /= p_indet_hour.sum()
-        X[:, 8] = rng.choice(range(24), size=n_samples, p=p_indet_hour)
-        X[:, 9] = rng.integers(0, 7, size=n_samples)
-        X[:, 10] = rng.normal(4.5, 1.0, size=n_samples)
-        X[:, 11] = rng.normal(4.0, 1.0, size=n_samples)
-        X[:, 12] = rng.poisson(3, size=n_samples)
-        X[:, 13] = rng.normal(800, 300, size=n_samples)
-        X[:, 14] = rng.exponential(200, size=n_samples)
-        X[:, 15] = rng.exponential(15, size=n_samples) + 2
-        X[:, 16] = rng.poisson(2, size=n_samples)
-        X[:, 17] = rng.poisson(12, size=n_samples)
-        X[:, 18] = rng.choice([0, 1], size=n_samples, p=[0.5, 0.5])
-        X[:, 19] = rng.normal(45, 15, size=n_samples)
-
-    else:  # True Positive (label == 2) ---------------------------------------
-        X[:, 0] = rng.choice([3, 4, 5], size=n_samples, p=[0.15, 0.35, 0.5])
-        X[:, 1] = rng.integers(1024, 65535, size=n_samples)
-        X[:, 2] = rng.choice([22, 3389, 445, 4444, 8888],
-                              size=n_samples, p=[0.25, 0.2, 0.2, 0.2, 0.15])
-        X[:, 3] = rng.choice([0, 1, 2, 3], size=n_samples,
-                              p=[0.3, 0.2, 0.3, 0.2])
-        X[:, 4] = rng.exponential(300, size=n_samples) + 20
-        X[:, 5] = rng.exponential(50000, size=n_samples) + 2000
-        X[:, 6] = rng.exponential(60, size=n_samples) + 5.0
-        X[:, 7] = rng.choice(range(10), size=n_samples)
-        # TP attacks more common at night (0-5) and late evening (18-23)
-        p_tp_hour = np.array([0.0625]*6 + [0.02083]*6 + [0.02084]*6 + [0.0625]*6)
-        p_tp_hour /= p_tp_hour.sum()
-        X[:, 8] = rng.choice(range(24), size=n_samples, p=p_tp_hour)
-        X[:, 9] = rng.integers(0, 7, size=n_samples)
-        X[:, 10] = rng.normal(6.0, 1.2, size=n_samples)
-        X[:, 11] = rng.normal(5.5, 1.1, size=n_samples)
-        X[:, 12] = rng.poisson(6, size=n_samples)
-        X[:, 13] = rng.normal(1200, 400, size=n_samples)
-        X[:, 14] = rng.exponential(350, size=n_samples)
-        X[:, 15] = rng.exponential(40, size=n_samples) + 5
-        X[:, 16] = rng.poisson(5, size=n_samples)
-        X[:, 17] = rng.poisson(25, size=n_samples)
-        X[:, 18] = rng.choice([0, 1], size=n_samples, p=[0.7, 0.3])
-        X[:, 19] = rng.normal(75, 15, size=n_samples)
-
-    return X
+def _map_label_to_triage(label_str: str) -> int:
+    """Map an NSL-KDD attack label to a 3-class SIEM triage category."""
+    label_str = label_str.strip().lower()
+    if label_str == "normal":
+        return 0  # False Positive
+    elif label_str in PROBE_ATTACKS:
+        return 1  # Indeterminate
+    else:
+        # Everything else (DoS, R2L, U2R, and any unknown attack) -> True Positive
+        return 2
 
 
-def generate_synthetic_siem_data(
-    n_samples: int = 20000,
-    random_state: int = 42,
-    dataset_name: str = "combined",
-) -> pd.DataFrame:
+def load_nsl_kdd(data_dir: str = None) -> pd.DataFrame:
     """
-    Generate a synthetic SIEM alert dataset.
+    Download and load the NSL-KDD dataset.
+
+    Tries to download from GitHub first. Falls back to sklearn's
+    fetch_kddcup99 if the download fails.
 
     Parameters
     ----------
-    n_samples : int
-        Total number of alert samples.
-    random_state : int
-        Seed for reproducibility.
-    dataset_name : str
-        One of 'cic-ids2017', 'nsl-kdd', 'unsw-nb15', or 'combined'.
-        This tag is stored in a 'source_dataset' column but does not
-        change the generation logic (all three are synthetic).
+    data_dir : str, optional
+        Directory to cache downloaded files. Defaults to project data/ dir.
 
     Returns
     -------
     pd.DataFrame
-        DataFrame with 20 feature columns, a 'label' column (0/1/2),
-        and a 'source_dataset' column.
+        Combined train+test DataFrame with triage labels and encoded features.
     """
-    rng = np.random.default_rng(random_state)
-
-    class_counts = [
-        int(n_samples * CLASS_DISTRIBUTION[0]),
-        int(n_samples * CLASS_DISTRIBUTION[1]),
-        0,  # placeholder
-    ]
-    class_counts[2] = n_samples - class_counts[0] - class_counts[1]
-
-    X_parts, y_parts = [], []
-    for label, count in enumerate(class_counts):
-        X_cls = _generate_class_features(count, label, rng)
-        X_parts.append(X_cls)
-        y_parts.append(np.full(count, label))
-
-    X = np.vstack(X_parts)
-    y = np.concatenate(y_parts)
-
-    # Clip non-negative features
-    for col in [0, 4, 5, 6, 12, 13, 14, 15, 16, 17]:
-        X[:, col] = np.clip(X[:, col], 0, None)
-    X[:, 19] = np.clip(X[:, 19], 0, 100)
-
-    df = pd.DataFrame(X, columns=FEATURE_NAMES)
-    df["label"] = y.astype(int)
-
-    # Assign source dataset tags
-    if dataset_name == "combined":
-        tags = rng.choice(
-            ["CIC-IDS2017", "NSL-KDD", "UNSW-NB15"],
-            size=n_samples, p=[0.4, 0.3, 0.3],
+    if data_dir is None:
+        data_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "data",
         )
-        df["source_dataset"] = tags
-    else:
-        df["source_dataset"] = dataset_name
+    os.makedirs(data_dir, exist_ok=True)
 
-    # Shuffle
-    df = df.sample(frac=1, random_state=random_state).reset_index(drop=True)
+    train_path = os.path.join(data_dir, "KDDTrain+.txt")
+    test_path = os.path.join(data_dir, "KDDTest+.txt")
+
+    try:
+        df = _load_from_github(train_path, test_path)
+        print(f"  Loaded NSL-KDD from GitHub ({len(df):,} samples)")
+    except Exception as e:
+        print(f"  GitHub download failed: {e}")
+        print("  Falling back to sklearn fetch_kddcup99 ...")
+        df = _load_from_sklearn()
+        print(f"  Loaded KDD Cup 99 via sklearn ({len(df):,} samples)")
+
+    return df
+
+
+def _load_from_github(train_path: str, test_path: str) -> pd.DataFrame:
+    """Download NSL-KDD from GitHub and return combined DataFrame."""
+    import urllib.request
+
+    # Download if not cached
+    for url, path in [(NSL_KDD_TRAIN_URL, train_path),
+                      (NSL_KDD_TEST_URL, test_path)]:
+        if not os.path.exists(path):
+            print(f"  Downloading {os.path.basename(path)} ...")
+            urllib.request.urlretrieve(url, path)
+
+    # Load CSVs
+    df_train = pd.read_csv(train_path, header=None, names=NSL_KDD_COLUMNS)
+    df_test = pd.read_csv(test_path, header=None, names=NSL_KDD_COLUMNS)
+
+    df_train["split"] = "train"
+    df_test["split"] = "test"
+
+    df = pd.concat([df_train, df_test], ignore_index=True)
+
+    # Map labels to triage classes
+    df["triage_label"] = df["label"].apply(_map_label_to_triage)
+
+    # Encode categorical features
+    label_encoders = {}
+    for col in CATEGORICAL_COLS:
+        le = LabelEncoder()
+        df[col] = le.fit_transform(df[col].astype(str))
+        label_encoders[col] = le
+
+    # Drop original label and difficulty columns, rename triage_label
+    df = df.drop(columns=["label", "difficulty"])
+    df = df.rename(columns={"triage_label": "label"})
+
+    # Add source dataset tag
+    df["source_dataset"] = "NSL-KDD"
+
+    return df
+
+
+def _load_from_sklearn() -> pd.DataFrame:
+    """Fallback: load KDD Cup 99 (10%) via sklearn and map to triage labels."""
+    from sklearn.datasets import fetch_kddcup99
+
+    bunch = fetch_kddcup99(subset=None, percent10=True, as_frame=True)
+    df = bunch.frame.copy()
+
+    # Rename target column
+    df = df.rename(columns={"labels": "label_raw"})
+
+    # Clean label strings (sklearn returns bytes or strings with trailing '.')
+    df["label_raw"] = df["label_raw"].apply(
+        lambda x: x.decode("utf-8").rstrip(".") if isinstance(x, bytes)
+        else str(x).rstrip(".")
+    )
+
+    # Map to triage
+    df["label"] = df["label_raw"].apply(_map_label_to_triage)
+
+    # Encode categoricals
+    categorical_sklearn = ["protocol_type", "service", "flag"]
+    for col in categorical_sklearn:
+        if col in df.columns:
+            # sklearn may return bytes
+            df[col] = df[col].apply(
+                lambda x: x.decode("utf-8") if isinstance(x, bytes) else str(x)
+            )
+            le = LabelEncoder()
+            df[col] = le.fit_transform(df[col])
+
+    # Drop raw label, keep only numeric + label
+    df = df.drop(columns=["label_raw"], errors="ignore")
+
+    # Add source tag and split
+    df["source_dataset"] = "KDD-Cup-99"
+    df["split"] = "combined"
+
     return df
 
 
@@ -208,30 +210,60 @@ def prepare_data(
     test_size: float = 0.2,
     val_size: float = 0.1,
     random_state: int = 42,
+    use_original_split: bool = True,
 ):
     """
     Split and scale the data for modelling.
+
+    If the DataFrame has a 'split' column with 'train'/'test' values and
+    use_original_split is True, uses the original NSL-KDD train/test split.
+    Otherwise, performs a random stratified split.
 
     Returns
     -------
     dict with keys: X_train, X_val, X_test, y_train, y_val, y_test,
                     scaler, feature_names
     """
-    feature_cols = [c for c in df.columns if c not in ("label", "source_dataset")]
-    X = df[feature_cols].values
-    y = df["label"].values
+    exclude_cols = {"label", "source_dataset", "split"}
+    feature_cols = [c for c in df.columns if c not in exclude_cols]
+    X = df[feature_cols].values.astype(np.float64)
+    y = df["label"].values.astype(int)
 
-    # Train / temp split
-    X_train, X_temp, y_train, y_temp = train_test_split(
-        X, y, test_size=test_size + val_size,
-        random_state=random_state, stratify=y,
+    has_split = "split" in df.columns
+    has_train_test = (
+        has_split
+        and set(df["split"].unique()) >= {"train", "test"}
     )
-    # Val / test split
-    relative_val = val_size / (test_size + val_size)
-    X_val, X_test, y_val, y_test = train_test_split(
-        X_temp, y_temp, test_size=1 - relative_val,
-        random_state=random_state, stratify=y_temp,
-    )
+
+    if use_original_split and has_train_test:
+        # Use NSL-KDD original train/test split
+        train_mask = df["split"].values == "train"
+        test_mask = df["split"].values == "test"
+
+        X_train_full = X[train_mask]
+        y_train_full = y[train_mask]
+        X_test = X[test_mask]
+        y_test = y[test_mask]
+
+        # Carve out validation set from training data
+        val_frac = val_size / (1.0 - test_size)  # approximate
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_train_full, y_train_full,
+            test_size=val_frac,
+            random_state=random_state,
+            stratify=y_train_full,
+        )
+    else:
+        # Random stratified split
+        X_train, X_temp, y_train, y_temp = train_test_split(
+            X, y, test_size=test_size + val_size,
+            random_state=random_state, stratify=y,
+        )
+        relative_val = val_size / (test_size + val_size)
+        X_val, X_test, y_val, y_test = train_test_split(
+            X_temp, y_temp, test_size=1 - relative_val,
+            random_state=random_state, stratify=y_temp,
+        )
 
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
@@ -254,8 +286,11 @@ def prepare_data(
 # Quick sanity check
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    df = generate_synthetic_siem_data(n_samples=5000)
+    df = load_nsl_kdd()
     print(f"Shape: {df.shape}")
     print(f"\nClass distribution:\n{df['label'].value_counts().sort_index()}")
+    for label, name in enumerate(CLASS_NAMES):
+        count = (df["label"] == label).sum()
+        print(f"  {name:20s}: {count:6,} ({count/len(df):6.1%})")
     print(f"\nDataset sources:\n{df['source_dataset'].value_counts()}")
     print(f"\nFeature summary:\n{df.describe().T[['mean', 'std', 'min', 'max']]}")

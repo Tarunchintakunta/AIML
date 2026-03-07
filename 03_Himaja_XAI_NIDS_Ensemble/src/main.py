@@ -2,8 +2,8 @@
 Main entry point for XAI NIDS Ensemble project.
 
 Usage:
-    python main.py --synthetic
-    python main.py --data_path /path/to/unswnb15/
+    python main.py                          # Auto-downloads KDD Cup 99 dataset
+    python main.py --data_path /path/to/unswnb15/  # Use local UNSW-NB15 files
 """
 
 import argparse
@@ -14,7 +14,7 @@ import numpy as np
 
 warnings.filterwarnings('ignore')
 
-from data_loader import generate_synthetic_data, preprocess_data
+from data_loader import download_and_load_data, load_unswnb15, preprocess_data
 from models import get_all_models, train_and_evaluate
 from explainers import run_xai_analysis
 from visualize import (plot_model_comparison, plot_confusion_matrices,
@@ -26,10 +26,8 @@ def main():
     parser = argparse.ArgumentParser(
         description='XAI for NIDS Ensemble Learning'
     )
-    parser.add_argument('--synthetic', action='store_true',
-                        help='Use synthetic data')
-    parser.add_argument('--data_path', type=str, default=None)
-    parser.add_argument('--n_samples', type=int, default=8000)
+    parser.add_argument('--data_path', type=str, default=None,
+                        help='Path to local UNSW-NB15 CSV files')
     parser.add_argument('--n_explain', type=int, default=50,
                         help='Number of samples for XAI explanation')
     parser.add_argument('--output_dir', type=str, default='results')
@@ -45,10 +43,13 @@ def main():
     # Load data
     print("\nPhase 1: Data Loading & Preprocessing")
     print("-" * 60)
-    print("Using synthetic UNSW-NB15-like data for demonstration...")
-    features, labels, feature_names = generate_synthetic_data(
-        n_samples=args.n_samples
-    )
+    if args.data_path:
+        print(f"Loading UNSW-NB15 dataset from {args.data_path}...")
+        features, labels, feature_names = load_unswnb15(args.data_path)
+    else:
+        print("Auto-downloading KDD Cup 99 real network intrusion dataset...")
+        features, labels, feature_names = download_and_load_data()
+
     train_data, val_data, test_data = preprocess_data(
         features, labels, feature_names
     )

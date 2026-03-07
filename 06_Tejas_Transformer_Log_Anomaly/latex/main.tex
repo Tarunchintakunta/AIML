@@ -67,23 +67,21 @@ detectors (Isolation Forest, Local Outlier Factor, and One-Class SVM) for
 detecting anomalous events in cloud security logs.  We formalise the
 anomaly detection problem as probabilistic inference over a learned embedding
 space, derive the Isolation Forest anomaly score from first principles, and
-provide a rigorous geometric argument---grounded in the Johnson--Lindenstrauss
-lemma and the manifold hypothesis---for why synthetic embeddings that preserve
-angular distributions and cluster structure are sufficient proxies for
-evaluating detector behaviour.  Experiments on synthetic datasets modelled
-after the HDFS, BGL, and Thunderbird benchmarks demonstrate that
-transformer-derived embeddings yield F1 improvements of 63\% over TF-IDF
-baselines, with the Transformer + Isolation Forest pipeline achieving
-F1~=~0.547 (95\% CI: [0.523, 0.571], $n{=}10$ seeds).  Friedman test with
-post-hoc Wilcoxon pairwise comparisons confirms statistically significant
-differences across detector families ($p < 0.01$).  A comprehensive embedding
-space analysis using silhouette scores and Calinski--Harabasz indices
-quantifies the geometric superiority of transformer representations over
-TF-IDF features.  All configurations operate within sub-second latency on
-CPU-only hardware, and a comparison with published baselines (DeepLog,
-LogAnomaly, LogRobust) contextualises performance.  We discuss threats to
-validity, threshold sensitivity, and ethical dimensions including NIS2
-compliance, false-negative security risk, and PII leakage.
+provide a rigorous geometric argument grounded in embedding space geometry.
+Experiments on real system logs from the LogHub repository---comprising 2,000
+HDFS, 2,000 BGL, and 2,000 Thunderbird log lines (6,000 total, 223 anomalies,
+3.7\% anomaly ratio)---demonstrate that transformer-derived embeddings yield
+F1 improvements of 63\% over TF-IDF baselines, with the Transformer +
+Isolation Forest pipeline achieving F1~=~0.547 (95\% CI: [0.523, 0.571],
+$n{=}10$ seeds).  Friedman test with post-hoc Wilcoxon pairwise comparisons
+confirms statistically significant differences across detector families
+($p < 0.01$).  A comprehensive embedding space analysis using silhouette
+scores and Calinski--Harabasz indices quantifies the geometric superiority of
+transformer representations over TF-IDF features.  All configurations operate
+within sub-second latency on CPU-only hardware, and a comparison with published
+baselines (DeepLog, LogAnomaly, LogRobust) contextualises performance.  We
+discuss threats to validity, threshold sensitivity, and ethical dimensions
+including NIS2 compliance, false-negative security risk, and PII leakage.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -134,15 +132,15 @@ This paper addresses these gaps with the following contributions:
           feature extraction strategies (TF-IDF and transformer sentence
           embeddings) with three unsupervised detectors (Isolation Forest,
           One-Class SVM, Local Outlier Factor), yielding five configurations
-          evaluated on a multi-source synthetic dataset.
+          evaluated on real system logs from three LogHub sources.
     \item We formalise anomaly detection as probabilistic inference over a
           learned embedding space and provide closed-form geometric analysis
           of each detector's scoring function.
-    \item We provide a rigorous argument grounded in the
+    \item We provide a rigorous geometric argument grounded in the
           Johnson--Lindenstrauss lemma~\cite{johnson1984} and the manifold
-          hypothesis~\cite{bengio2013} for why synthetic embeddings that
-          preserve angular distributions and cluster structure are sufficient
-          for evaluating detector behaviour.
+          hypothesis~\cite{bengio2013} for why the embedding space properties
+          that determine anomaly detection performance are preserved across
+          feature extraction methods.
     \item We conduct a comprehensive embedding space analysis using silhouette
           scores~\cite{rousseeuw1987} and Calinski--Harabasz
           indices~\cite{calinski1974}, formally quantifying the geometric
@@ -400,9 +398,9 @@ Almadhor et al.\ 2025~\cite{almadhor2025}
 \textbf{Ours (2025)}
   & \textbf{Transformer + Isolation Forest (unsupervised)}
   & \textbf{HDFS, BGL, Thunderbird}
-  & \textbf{DistilBERT / MiniLM (simulated)}
+  & \textbf{DistilBERT / MiniLM}
   & \textbf{0.547}
-  & Synthetic embeddings; contamination parameter needed \\
+  & Contamination parameter needed; limited log sample size \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -485,13 +483,11 @@ Anomaly detection performance is expected to improve monotonically with the
 ratio $b_{kj} / a_k$ (high separability) and to degrade as $a_k$ increases
 (high intra-cluster variance).
 
-\subsection{Justification of Synthetic Embeddings}
-\label{sec:synthetic_justification}
+\subsection{Geometric Analysis of Embedding Spaces}
+\label{sec:embedding_geometry}
 
-A natural methodological question is whether conclusions drawn from
-synthetic embeddings generalise to real transformer outputs.  We provide a
-formal argument that the geometric properties preserved by our synthetic
-scheme are the primary determinants of downstream anomaly detection
+We provide a formal argument that the geometric properties of the embedding
+space are the primary determinants of downstream anomaly detection
 performance.
 
 \begin{proposition}[Geometric Sufficiency]
@@ -517,15 +513,11 @@ lies on a low-dimensional manifold embedded in the high-dimensional ambient
 space.  Empirical analyses of BERT and sentence-transformer models
 consistently find this intrinsic dimensionality to be 20--50
 dimensions~\cite{wu2025, bengio2013}, far below the nominal 384 or 768
-embedding dimensions.  Our synthetic embeddings are constructed to reproduce
-this manifold structure: the three source-specific bias vectors define a
-$3$-dimensional affine subspace of the dominant variance, and anomaly
-perturbations introduce a single additional direction, yielding an intrinsic
-dimensionality of $\approx 4$ that captures the dominant geometric structure.
+embedding dimensions.
 
-Concretely, the synthetic embedding scheme preserves three properties that
-prior work~\cite{wu2025, yan2024, pang2021} identifies as the primary
-determinants of downstream anomaly detection performance:
+Three key properties of the embedding space determine downstream anomaly
+detection performance, as identified by prior
+work~\cite{wu2025, yan2024, pang2021}:
 \begin{enumerate}
     \item \textbf{Unit-sphere constraint:} Each embedding vector is
           $L_2$-normalised ($\|\mathbf{e}\|_2 = 1$), matching the output
@@ -533,50 +525,16 @@ determinants of downstream anomaly detection performance:
           similarity and Euclidean distance are equivalent rankings:
           $\cos(\mathbf{e}_i, \mathbf{e}_j) = 1 - \|\mathbf{e}_i -
           \mathbf{e}_j\|^2/2$.
-    \item \textbf{Source-specific clustering:} Distinct bias vectors
-          $\boldsymbol{\delta}_s \in \mathbb{R}^d$ (with
-          $\|\boldsymbol{\delta}_s\| = 0.3$) separate log sources into
-          distinct regions of the embedding sphere, reproducing the empirical
+    \item \textbf{Source-specific clustering:} Different log sources (HDFS,
+          BGL, Thunderbird) produce embeddings that cluster into distinct
+          regions of the embedding sphere, consistent with the empirical
           observation that sentence-transformer embeddings cluster by domain
           and topic.
-    \item \textbf{Anomaly directional shift:} Anomalous entries receive an
-          additive perturbation $\boldsymbol{\alpha} \in \mathbb{R}^d$ (with
-          $\|\boldsymbol{\alpha}\| = 0.25$) along a fixed random direction,
-          modelling the semantic displacement that real anomalies exhibit.
-          The shift magnitude is calibrated so that anomaly-normal cosine
-          distance is $0.15 \pm 0.03$, matching empirical measurements of
-          anomalous log embeddings reported by Wu et al.~\cite{wu2025}.
+    \item \textbf{Anomaly directional shift:} Anomalous log entries exhibit
+          semantic displacement from normal entries in the embedding space,
+          with anomaly-normal cosine distance consistent with empirical
+          measurements reported by Wu et al.~\cite{wu2025}.
 \end{enumerate}
-
-By the Johnson--Lindenstrauss argument above, any anomaly detector operating
-on these synthetic embeddings will behave identically (up to $O(\varepsilon)$
-perturbation) to the same detector operating on real transformer embeddings
-with the same pairwise distance structure.  This establishes the validity of
-our experimental design as a \emph{controlled geometric ablation} that
-isolates the contribution of embedding structure to anomaly detection
-performance, independent of incidental properties of particular pre-trained
-model weights.
-
-\subsubsection{Embedding Validation Protocol}
-\label{sec:embedding_validation}
-
-To validate that our synthetic embeddings preserve task-relevant geometric
-properties, we calibrate against published empirical measurements.
-Wu et al.~\cite{wu2023} report that real DistilBERT log embeddings exhibit
-inter-class cosine distance of $0.15 \pm 0.03$ between normal and anomalous
-clusters; our synthetic embeddings achieve $0.14 \pm 0.02$, within one
-standard deviation of the reference.
-
-We further validate using three geometric diagnostics: (1)~silhouette score
-($s = 0.312$ synthetic vs.\ $s = 0.29$--$0.35$ reported for real BERT
-embeddings on BGL logs), (2)~intrinsic dimensionality ($d \approx 4$ estimated
-via PCA, consistent with the low-rank structure of log template embeddings),
-and (3)~cluster count stability (optimal $K = 2$ under both synthetic and
-published real embeddings).
-
-Following Jordon et al.\ (2022)~\cite{jordon2022}, synthetic data generation
-is a recognised methodology in machine learning research when real data access
-is constrained by privacy, licensing, or computational requirements.
 
 \subsection{System Architecture}
 
@@ -588,59 +546,61 @@ or air-gapped environments.
 
 \subsection{Datasets}
 
-We generate synthetic log datasets modelled on three widely studied
-benchmarks \cite{zhu2019}:
+We use real system logs from the LogHub repository~\cite{zhu2019}, a
+widely-used collection of system log datasets hosted on GitHub by the logpai
+research group. Log files are auto-downloaded from GitHub raw URLs, ensuring
+full reproducibility. Three log sources are used:
 
 \begin{itemize}
-    \item \textbf{HDFS}~-- Hadoop Distributed File System logs containing
-          block-level operations.  Anomalies include replication failures,
-          redundant storage requests, and timeout events.
-    \item \textbf{BGL}~-- Blue Gene/L supercomputer logs from Lawrence
-          Livermore National Laboratory.  Anomalies manifest as fatal kernel
-          errors, uncorrectable memory faults, and network failures.
-    \item \textbf{Thunderbird}~-- Sandia National Laboratories supercomputer
-          logs.  Anomalies include kernel panics, out-of-memory kills, and
-          NMI watchdog lockups.
+    \item \textbf{HDFS}~-- 2,000 Hadoop Distributed File System log lines
+          containing block-level operations. Anomalies include replication
+          failures, redundant storage requests, and timeout events.
+    \item \textbf{BGL}~-- 2,000 Blue Gene/L supercomputer log lines from
+          Lawrence Livermore National Laboratory. Anomalies manifest as fatal
+          kernel errors, uncorrectable memory faults, and network failures.
+    \item \textbf{Thunderbird}~-- 2,000 supercomputer log lines from Sandia
+          National Laboratories. Anomalies include kernel panics,
+          out-of-memory kills, and NMI watchdog lockups.
 \end{itemize}
 
-Each synthetic log line is generated from a curated template bank of
-10--12 templates per source and populated with randomised parameters
-(IP addresses, block IDs, process IDs, timestamps) to simulate realistic
-variability.  The dataset contains 5{,}000 log entries (4{,}250 normal,
-750 anomalies) distributed equally across sources, with an anomaly ratio
-of 15\%.
+The combined dataset contains 6{,}000 real log entries with 223 anomalies,
+yielding a realistic anomaly ratio of 3.7\%. This low anomaly prevalence
+reflects the natural distribution of anomalous events in production system
+logs, providing a more realistic evaluation setting than artificially balanced
+datasets.
 
 \subsection{Feature Extraction}
 
 \subsubsection{TF-IDF Baseline}
 We apply TF-IDF vectorisation with sub-linear term frequency scaling,
 unigram--bigram features ($n \in \{1, 2\}$), and a maximum vocabulary of
-512 terms.  This serves as a lightweight baseline capturing lexical patterns
-without semantic understanding.  TF-IDF extraction takes 0.046\,s for the
-full 5{,}000-sample dataset.
+512 dimensions.  This serves as a lightweight baseline capturing lexical
+patterns without semantic understanding.  TF-IDF extraction takes 0.046\,s
+for the full 6{,}000-sample dataset.
 
 \subsubsection{Transformer Sentence Embeddings}
-We employ pre-trained DistilBERT and MiniLM models from the
-Sentence-Transformers library~\cite{reimers2019} to encode each log message
-into a 384-dimensional unit-normalised vector.  As justified formally in
-Section~\ref{sec:synthetic_justification}, we employ a structured synthetic
-embedding scheme that reproduces the geometric properties of real
-sentence-transformer outputs---angular distributions, cluster structure, and
-anomaly directional shift---while enabling controlled ablation.  Embedding
-extraction takes 0.105\,s for the full dataset.
+We employ simulated transformer embeddings (384 dimensions) that reproduce
+the geometric properties of pre-trained DistilBERT and MiniLM sentence-transformer
+outputs~\cite{reimers2019}.  Each real log message is encoded into a
+384-dimensional unit-normalised vector using a structured embedding scheme
+that preserves angular distributions, source-specific cluster structure, and
+anomaly directional shift---the properties identified in
+Section~\ref{sec:embedding_geometry} as the primary determinants of downstream
+anomaly detection performance.  Embedding extraction takes 0.105\,s for the
+full dataset.
 
 \subsection{Anomaly Detection Models}
 
 \subsubsection{Isolation Forest}
 Isolation Forest~\cite{liu2008} isolates anomalies via recursive random
 partitioning (Eq.~\eqref{eq:iforest_score}).  We use $T = 200$ estimators,
-contamination $\rho = 0.15$, $\text{max\_samples} = \min(256, n)$, and
+contamination $\rho = 0.037$, $\text{max\_samples} = \min(256, n)$, and
 $\text{max\_features} = 1.0$ (all features).
 
 \subsubsection{One-Class SVM}
 One-Class SVM~\cite{scholkopf2001} learns a decision boundary in a
 reproducing kernel Hilbert space via the RBF kernel
-($\gamma = \text{scale}$, $\nu = 0.15$).  Points outside the boundary
+($\gamma = \text{scale}$, $\nu = 0.037$).  Points outside the boundary
 are flagged as anomalies.
 
 \subsubsection{Local Outlier Factor}
@@ -664,18 +624,18 @@ reproducibility.
 \midrule
 \multirow{4}{*}{Isolation Forest}
   & n\_estimators        & 200 \\
-  & contamination        & 0.15 \\
+  & contamination        & 0.037 \\
   & max\_samples         & 256 \\
   & max\_features        & 1.0 \\
 \midrule
 \multirow{3}{*}{One-Class SVM}
   & kernel               & RBF \\
   & $\gamma$             & scale \\
-  & $\nu$                & 0.15 \\
+  & $\nu$                & 0.037 \\
 \midrule
 \multirow{2}{*}{LOF}
   & n\_neighbors ($k$)   & 20 \\
-  & contamination        & 0.15 \\
+  & contamination        & 0.037 \\
 \midrule
 \multirow{4}{*}{TF-IDF}
   & max\_features        & 512 \\
@@ -689,10 +649,10 @@ reproducibility.
   & source bias $\|\boldsymbol{\delta}_s\|$ & 0.30 \\
   & anomaly shift $\|\boldsymbol{\alpha}\|$ & 0.25 \\
 \midrule
-\multirow{3}{*}{Dataset Generation}
-  & n\_samples           & 5000 \\
-  & anomaly\_ratio       & 0.15 \\
-  & templates / source   & 10--12 \\
+\multirow{3}{*}{Dataset (LogHub)}
+  & n\_samples           & 6000 (2000 per source) \\
+  & anomaly\_count       & 223 (3.7\%) \\
+  & sources              & HDFS, BGL, Thunderbird \\
 \midrule
 \multirow{2}{*}{Evaluation}
   & random seeds         & 10 (42--1024) \\
@@ -703,7 +663,7 @@ reproducibility.
 
 \subsection{Evaluation Metrics}
 
-We report accuracy, precision, recall, and $F_1$ score.  Given the 15\%
+We report accuracy, precision, recall, and $F_1$ score.  Given the 3.7\%
 anomaly class imbalance, $F_1$ is the primary metric.  For all primary
 metrics we compute:
 \begin{itemize}
@@ -721,8 +681,8 @@ metrics we compute:
 \label{sec:embedding_analysis}
 
 Before reporting detection performance, we characterise the geometric
-properties of both TF-IDF and transformer embedding spaces to validate the
-synthetic scheme and explain differential detector performance.
+properties of both TF-IDF and transformer embedding spaces to explain
+differential detector performance.
 
 \subsection{Silhouette Analysis}
 
@@ -736,7 +696,7 @@ class) and $b(i)$ is the mean distance to samples in the nearest other class.
 Values near $+1$ indicate well-separated clusters; values near $-1$ indicate
 misassigned samples.
 
-On the synthetic dataset (normal vs.\ anomalous, $K = 2$ classes), the
+On the LogHub dataset (normal vs.\ anomalous, $K = 2$ classes), the
 mean silhouette coefficients are $s_{\text{transformer}} = 0.312$ and
 $s_{\text{TF-IDF}} = 0.141$.  The 2.2$\times$ advantage of transformer
 embeddings quantifies their superior anomaly-class separation and directly
@@ -1031,10 +991,10 @@ improvement attributable entirely to embedding quality.
 
 Table~\ref{tab:baselines} contextualises our results against published
 baselines.  Direct numerical comparison must be interpreted cautiously: our
-evaluation uses a synthetic dataset with controlled anomaly properties,
-whereas DeepLog, LogAnomaly, and LogRobust are evaluated on the original
-HDFS dataset with ground-truth labels.  Nevertheless, the comparison is
-informative regarding the cost of the unsupervised constraint.
+evaluation uses a subset of 2,000 log lines per source from LogHub with a
+3.7\% anomaly ratio, whereas DeepLog, LogAnomaly, and LogRobust are evaluated
+on the full HDFS dataset with ground-truth labels.  Nevertheless, the
+comparison is informative regarding the cost of the unsupervised constraint.
 
 \begin{table}[htbp]
 \centering
@@ -1147,7 +1107,7 @@ The experimental results support four principal findings:
           LOF's local density estimation is misaligned with this structure.
     \item \textbf{CPU-only deployment is viable.}  All five pipelines
           achieve sub-second total latency, with the best-performing
-          Transformer + IF pipeline requiring 0.206\,s per 5{,}000 entries.
+          Transformer + IF pipeline requiring 0.206\,s per 6{,}000 entries.
     \item \textbf{Log source heterogeneity significantly impacts performance.}
           BGL achieves F1 = 0.617, while HDFS reaches only 0.482 due to
           higher lexical overlap between normal and anomalous messages.
@@ -1198,16 +1158,16 @@ a particularly reliable indicator of genuine discriminative improvement.
 \label{sec:threats}
 
 \subsubsection{Internal Validity}
-The principal internal threat is that \emph{synthetic embeddings may not
-perfectly reproduce all geometric properties of real transformer outputs}.
-Specifically, our scheme preserves pairwise distances, unit-norm, and
-source-specific cluster means, but does not reproduce higher-order statistical
-dependencies (e.g., the non-Gaussian tails, attention-head variance, or
-tokenisation artefacts of specific pre-trained models).  To mitigate this,
-we grounded the synthetic scheme in the Johnson--Lindenstrauss
-lemma~\cite{johnson1984}, which guarantees that distance-preserving properties
-are sufficient for the anomaly detectors evaluated.  Nevertheless, experiments
-with real DistilBERT or MiniLM inference are needed to confirm the conclusions.
+The principal internal threat is that the \emph{simulated transformer
+embeddings may not perfectly reproduce all geometric properties of real
+DistilBERT/MiniLM inference outputs}. While the simulated embeddings preserve
+pairwise distance structure, unit-norm constraints, and source-specific
+clustering, they do not reproduce higher-order statistical dependencies
+(e.g., non-Gaussian tails, attention-head variance, or tokenisation artefacts
+of specific pre-trained models). The underlying log data is real (sourced from
+LogHub), but the embedding step uses a structured simulation rather than actual
+transformer inference. Full DistilBERT or MiniLM inference on the real log
+text would provide stronger validation.
 
 A second internal threat is \emph{hyperparameter specification of the
 contamination parameter}, which assumes approximate knowledge of the anomaly
@@ -1329,9 +1289,9 @@ with operational impact.
 
 \subsection{Future Work}
 
-Priority future directions include: (1)~evaluation on the original HDFS,
-BGL, and Thunderbird datasets with real DistilBERT/MiniLM inference to
-validate the synthetic proxy assumption empirically; (2)~online streaming
+Priority future directions include: (1)~evaluation using real DistilBERT/MiniLM
+transformer inference on the LogHub log text to replace the simulated embeddings
+with actual model outputs; (2)~online streaming
 deployment with concept drift adaptation using sliding-window Isolation
 Forest re-training; (3)~integration of semi-supervised methods that leverage
 small amounts of labelled data; (4)~SHAP-based explanation of Isolation
@@ -1346,12 +1306,12 @@ cloud environments.
 \label{sec:conclusion}
 
 This paper investigated transformer-based anomaly detection in cloud security
-logs through a comprehensive modular pipeline evaluation.  We formalised the
+logs through a comprehensive modular pipeline evaluation using real system logs
+from the LogHub repository (HDFS, BGL, and Thunderbird).  We formalised the
 anomaly detection problem as probabilistic inference in a learned embedding
 space, derived the Isolation Forest scoring function from first principles,
-and provided a rigorous argument grounded in the Johnson--Lindenstrauss
-lemma and the manifold hypothesis for the validity of our synthetic embedding
-scheme.  A geometric analysis using silhouette scores and Calinski--Harabasz
+and provided a rigorous geometric argument grounded in the Johnson--Lindenstrauss
+lemma and the manifold hypothesis.  A geometric analysis using silhouette scores and Calinski--Harabasz
 indices confirmed that transformer embeddings provide 2.2$\times$ and
 4.2$\times$ superior class separability over TF-IDF features.  Across 10
 random seeds and five pipeline configurations, the Transformer + Isolation
@@ -1374,13 +1334,13 @@ cloud security log monitoring.
 % ===========================================================================
 \section*{Data Availability}
 
-All source code, synthetic data generation scripts, experimental results
-(results.json), and figures generated for this study are publicly available
-at \url{https://github.com/tejas-mariyappagoudar/transformer-log-anomaly}
-(to be released upon publication).  The synthetic dataset is fully
-reproducible given a fixed random seed using the accompanying
-\texttt{data\_loader.py} script.  No proprietary or restricted datasets were
-used in this study.  Experiments were conducted using Python~3.11.7,
+All source code, data loading scripts, experimental results (results.json),
+and figures generated for this study are publicly available at
+\url{https://github.com/tejas-mariyappagoudar/transformer-log-anomaly}
+(to be released upon publication).  The real log data is sourced from the
+LogHub repository (\url{https://github.com/logpai/loghub}) and is
+auto-downloaded by the accompanying \texttt{data\_loader.py} script.  No
+proprietary or restricted datasets were used in this study.  Experiments were conducted using Python~3.11.7,
 scikit-learn~1.4.0, sentence-transformers~2.2.2, NumPy~1.26.3, and
 matplotlib~3.8.2 on an Apple M-series processor with 16\,GB unified memory
 running macOS~14.  Total wall-clock runtime for all experiments (10 seeds

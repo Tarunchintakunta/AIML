@@ -2,13 +2,13 @@
 Main entry point for GraphSAGE APT Detection project.
 
 Usage:
-    # With synthetic data (for testing):
-    python main.py --synthetic
+    # Auto-download real dataset (KDD Cup 99 or CIC-IDS2017):
+    python main.py
 
-    # With CIC-IDS2017 dataset:
+    # With local CIC-IDS2017 dataset:
     python main.py --dataset cicids2017 --data_path /path/to/cicids2017/
 
-    # With ToN-IoT dataset:
+    # With local ToN-IoT dataset:
     python main.py --dataset toniot --data_path /path/to/toniot/
 """
 
@@ -17,7 +17,7 @@ import os
 import sys
 import json
 
-from data_loader import prepare_dataset, generate_synthetic_data
+from data_loader import prepare_dataset, download_and_prepare_dataset
 from model import GraphSAGEDetector, GraphSAGEThreeLayer
 from train import run_training
 from baselines import run_all_baselines
@@ -30,13 +30,11 @@ def main():
         description='GraphSAGE APT Detection with Neighbour Sampling')
     parser.add_argument('--dataset', type=str, default='cicids2017',
                         choices=['cicids2017', 'toniot'],
-                        help='Dataset to use')
+                        help='Dataset to use (when --data_path is provided)')
     parser.add_argument('--data_path', type=str, default=None,
-                        help='Path to dataset CSV directory')
+                        help='Path to local dataset CSV directory')
     parser.add_argument('--label_col', type=str, default='Label',
                         help='Name of label column in dataset')
-    parser.add_argument('--synthetic', action='store_true',
-                        help='Use synthetic data for testing')
     parser.add_argument('--max_samples', type=int, default=50000,
                         help='Maximum samples to use from dataset')
     parser.add_argument('--hidden', type=int, default=128,
@@ -62,18 +60,13 @@ def main():
     print("GraphSAGE APT Detection Pipeline")
     print("=" * 60)
 
-    if args.synthetic:
-        print("\nUsing synthetic data for demonstration...")
-        data = generate_synthetic_data(n_nodes=5000, n_features=20, attack_ratio=0.2)
+    if args.data_path is not None:
+        print(f"\nLoading {args.dataset} from {args.data_path}...")
+        data = prepare_dataset(args.data_path, args.dataset,
+                               args.label_col, args.max_samples)
     else:
-        if args.data_path is None:
-            print("\nNo data_path provided. Using synthetic data for demo.")
-            print("For real datasets, use: python main.py --data_path /path/to/data/")
-            data = generate_synthetic_data(n_nodes=5000, n_features=20, attack_ratio=0.2)
-        else:
-            print(f"\nLoading {args.dataset} from {args.data_path}...")
-            data = prepare_dataset(args.data_path, args.dataset,
-                                   args.label_col, args.max_samples)
+        print("\nAuto-downloading real network intrusion dataset...")
+        data = download_and_prepare_dataset(max_samples=args.max_samples)
 
     print(f"\nGraph Statistics:")
     print(f"  Nodes: {data.num_nodes}")

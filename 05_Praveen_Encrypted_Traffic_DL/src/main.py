@@ -2,7 +2,8 @@
 Main entry point for Encrypted Traffic Classification project.
 
 Usage:
-    python main.py --synthetic
+    python main.py                          # Auto-download KDD Cup 99 real traffic data
+    python main.py --dataset /path/to.csv   # Use local ISCX-VPN-NonVPN CSV file
 """
 
 import argparse
@@ -13,7 +14,7 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
-from data_loader import generate_synthetic_data, preprocess_data
+from data_loader import load_kddcup99_traffic, load_iscx_csv, preprocess_data
 from model import (CNNClassifier, LSTMClassifier, CNNLSTMAttention,
                    train_model, evaluate_model, measure_latency,
                    train_random_forest)
@@ -25,8 +26,12 @@ def main():
     parser = argparse.ArgumentParser(
         description='Deep Learning for Encrypted Traffic Classification'
     )
-    parser.add_argument('--synthetic', action='store_true')
-    parser.add_argument('--n_samples', type=int, default=7000)
+    parser.add_argument('--dataset', type=str, default=None,
+                        help='Path to local ISCX-VPN-NonVPN CSV file. '
+                             'If not provided, auto-downloads KDD Cup 99 '
+                             'real network traffic data.')
+    parser.add_argument('--n_samples', type=int, default=7000,
+                        help='Max samples (balanced across classes)')
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--output_dir', type=str, default='results')
     args = parser.parse_args()
@@ -41,9 +46,18 @@ def main():
     # Data
     print("\nPhase 1: Data Loading & Preprocessing")
     print("-" * 60)
-    features, labels, feature_names, class_names = generate_synthetic_data(
-        n_samples=args.n_samples
-    )
+    if args.dataset and os.path.exists(args.dataset):
+        features, labels, feature_names, class_names = load_iscx_csv(
+            args.dataset
+        )
+    else:
+        if args.dataset:
+            print(f"  WARNING: File not found: {args.dataset}")
+            print("  Falling back to KDD Cup 99 dataset.")
+        features, labels, feature_names, class_names = load_kddcup99_traffic(
+            n_samples=args.n_samples
+        )
+
     train_data, val_data, test_data, scaler = preprocess_data(features, labels)
     X_train, y_train = train_data
     X_val, y_val = val_data

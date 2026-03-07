@@ -3,7 +3,7 @@
 main.py - Full Pipeline for Transformer-Based Log Anomaly Detection
 =====================================================================
 Orchestrates the complete workflow:
-    1. Generate / load synthetic log data (HDFS, BGL, Thunderbird)
+    1. Download and parse real log data (HDFS, BGL, Thunderbird) from LogHub
     2. Extract features (TF-IDF and simulated transformer embeddings)
     3. Train and evaluate five anomaly detection models
     4. Produce publication-quality figures
@@ -11,9 +11,9 @@ Orchestrates the complete workflow:
 
 Usage
 -----
-    python main.py --synthetic                   # default: 5000 logs
-    python main.py --synthetic --n_samples 10000 # larger dataset
-    python main.py --synthetic --anomaly_ratio 0.10
+    python main.py                          # default: all three datasets
+    python main.py --datasets hdfs bgl      # specific datasets only
+    python main.py --datasets hdfs          # HDFS only
 
 Author : Tejas Vijay Mariyappagoudar (x24213829)
 """
@@ -27,10 +27,11 @@ import numpy as np
 
 # Ensure the src directory is on the path when run from project root
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-from data_loader import generate_dataset, prepare_features
+from data_loader import load_real_datasets, prepare_features
 from model import run_all_models
 from visualize import generate_all_figures
 
@@ -44,16 +45,13 @@ def parse_args():
         description="Transformer-Based Anomaly Detection in Cloud Security Logs"
     )
     parser.add_argument(
-        "--synthetic", action="store_true",
-        help="Use synthetic log data (no external datasets required)."
+        "--datasets", nargs="+", default=["hdfs", "bgl", "thunderbird"],
+        choices=["hdfs", "bgl", "thunderbird"],
+        help="Which LogHub datasets to download and use (default: all three)."
     )
     parser.add_argument(
-        "--n_samples", type=int, default=5000,
-        help="Number of synthetic log lines to generate (default: 5000)."
-    )
-    parser.add_argument(
-        "--anomaly_ratio", type=float, default=0.15,
-        help="Fraction of anomalies in the dataset (default: 0.15)."
+        "--data_dir", type=str, default=os.path.join(PROJECT_DIR, "data"),
+        help="Directory for storing downloaded log files."
     )
     parser.add_argument(
         "--seed", type=int, default=42,
@@ -83,20 +81,29 @@ def main():
     print("  Student: Tejas Vijay Mariyappagoudar (x24213829)")
     print("=" * 70)
 
-    # ---- Step 1: Data generation ----------------------------------------
-    print(f"\n[Step 1/5] Generating synthetic log data  "
-          f"(n={args.n_samples}, anomaly_ratio={args.anomaly_ratio}) ...")
-    df = generate_dataset(
-        n_samples=args.n_samples,
-        anomaly_ratio=args.anomaly_ratio,
+    # ---- Step 1: Download and parse real log data -------------------------
+    print(f"\n[Step 1/5] Downloading and parsing real log datasets ...")
+    print(f"  Datasets: {args.datasets}")
+    print(f"  Data dir: {args.data_dir}")
+
+    df = load_real_datasets(
+        data_dir=args.data_dir,
+        dataset_sources=args.datasets,
         seed=args.seed,
     )
-    print(f"  Total logs     : {len(df)}")
+
+    # Compute actual anomaly ratio from the real data
+    anomaly_ratio = df["label"].mean()
+    # Clamp to a reasonable range for contamination parameter
+    contamination = max(0.01, min(0.5, anomaly_ratio))
+
+    print(f"\n  Total logs     : {len(df)}")
     print(f"  Normal         : {(df['label']==0).sum()}")
     print(f"  Anomaly        : {(df['label']==1).sum()}")
+    print(f"  Anomaly ratio  : {anomaly_ratio:.2%}")
     print(f"  Sources        : {df['source'].value_counts().to_dict()}")
 
-    # ---- Step 2: Feature extraction -------------------------------------
+    # ---- Step 2: Feature extraction ---------------------------------------
     print("\n[Step 2/5] Extracting features ...")
 
     t0 = time.perf_counter()
@@ -111,16 +118,17 @@ def main():
 
     y_true = df["label"].values
 
-    # ---- Step 3: Model training & evaluation ----------------------------
+    # ---- Step 3: Model training & evaluation ------------------------------
     print("\n[Step 3/5] Training and evaluating models ...")
+    print(f"  Using contamination = {contamination:.4f} (from real data)")
     results = run_all_models(
         X_tfidf=X_tfidf,
         X_transformer=X_trans,
         y_true=y_true,
-        contamination=args.anomaly_ratio,
+        contamination=contamination,
     )
 
-    # ---- Step 4: Visualisation ------------------------------------------
+    # ---- Step 4: Visualisation --------------------------------------------
     print("\n[Step 4/5] Generating visualisations ...")
     figure_paths = generate_all_figures(
         results=results,
@@ -129,7 +137,7 @@ def main():
         output_dir=args.output_dir,
     )
 
-    # ---- Step 5: Save results JSON --------------------------------------
+    # ---- Step 5: Save results JSON ----------------------------------------
     print("\n[Step 5/5] Saving results ...")
     total_time = time.perf_counter() - overall_start
 
@@ -137,14 +145,23 @@ def main():
         "project": "Transformer-Based Anomaly Detection in Cloud Security Logs",
         "student": "Tejas Vijay Mariyappagoudar (x24213829)",
         "dataset": {
-            "type": "synthetic",
-            "n_samples": args.n_samples,
-            "anomaly_ratio": args.anomaly_ratio,
-            "sources": ["hdfs", "bgl", "thunderbird"],
+            "type": "real (LogHub)",
+            "sources": args.datasets,
+            "total_samples": len(df),
+            "anomaly_ratio": round(anomaly_ratio, 4),
+            "per_source": df["source"].value_counts().to_dict(),
+            "urls": {
+                "hdfs_log": "https://raw.githubusercontent.com/logpai/loghub/master/HDFS/HDFS_2k.log",
+                "hdfs_structured": "https://raw.githubusercontent.com/logpai/loghub/master/HDFS/HDFS_2k.log_structured.csv",
+                "bgl_log": "https://raw.githubusercontent.com/logpai/loghub/master/BGL/BGL_2k.log",
+                "bgl_structured": "https://raw.githubusercontent.com/logpai/loghub/master/BGL/BGL_2k.log_structured.csv",
+                "thunderbird_log": "https://raw.githubusercontent.com/logpai/loghub/master/Thunderbird/Thunderbird_2k.log",
+                "thunderbird_structured": "https://raw.githubusercontent.com/logpai/loghub/master/Thunderbird/Thunderbird_2k.log_structured.csv",
+            },
         },
         "features": {
-            "tfidf_dim": X_tfidf.shape[1],
-            "transformer_dim": X_trans.shape[1],
+            "tfidf_dim": int(X_tfidf.shape[1]),
+            "transformer_dim": int(X_trans.shape[1]),
             "tfidf_extraction_sec": round(tfidf_time, 4),
             "transformer_extraction_sec": round(trans_time, 4),
         },
@@ -159,7 +176,7 @@ def main():
         json.dump(summary, f, indent=2)
     print(f"  Results saved to: {args.results_file}")
 
-    # ---- Summary --------------------------------------------------------
+    # ---- Summary ----------------------------------------------------------
     print("\n" + "=" * 70)
     print("  RESULTS SUMMARY")
     print("=" * 70)

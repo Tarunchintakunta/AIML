@@ -1,12 +1,13 @@
 """
 Data loading and preprocessing for XAI NIDS Ensemble project.
-Supports UNSW-NB15 dataset and synthetic data generation.
+Supports real KDD Cup 99 dataset (auto-download) and local UNSW-NB15 CSV files.
 """
 
+import os
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import RobustScaler, LabelEncoder
 from scipy.stats import zscore
 
 
@@ -48,40 +49,75 @@ def load_unswnb15(data_path):
     return features, labels.astype(np.int64), feature_cols
 
 
-def generate_synthetic_data(n_samples=10000, n_features=39):
-    """Generate synthetic UNSW-NB15-like data for demonstration."""
-    np.random.seed(42)
+def download_and_load_data(data_dir='data'):
+    """
+    Download and load real network intrusion detection data.
 
-    n_benign = int(n_samples * 0.7)
-    n_attack = n_samples - n_benign
+    Uses sklearn's built-in KDD Cup 99 dataset, a widely-used benchmark
+    for network intrusion detection research. The 10% subset is used
+    for manageable size while retaining all attack categories.
 
-    # Benign traffic patterns
-    benign = np.random.randn(n_benign, n_features).astype(np.float32)
-    benign[:, 0] = np.abs(np.random.exponential(0.5, n_benign))  # dur
-    benign[:, 3] = np.abs(np.random.exponential(500, n_benign))  # sbytes
-    benign[:, 4] = np.abs(np.random.exponential(800, n_benign))  # dbytes
-    benign[:, 6] = np.random.choice([62, 64, 128, 254], n_benign)  # sttl
+    Returns:
+        features: np.ndarray of shape (n_samples, n_features)
+        labels: np.ndarray of shape (n_samples,) with binary labels (0=normal, 1=attack)
+        feature_names: list of feature name strings
+    """
+    from sklearn.datasets import fetch_kddcup99
 
-    # Attack traffic patterns with shifted distributions
-    attack = np.random.randn(n_attack, n_features).astype(np.float32) + 0.8
-    attack[:, 0] = np.abs(np.random.exponential(2.0, n_attack))  # longer dur
-    attack[:, 3] = np.abs(np.random.exponential(2000, n_attack))  # more sbytes
-    attack[:, 4] = np.abs(np.random.exponential(100, n_attack))  # less dbytes
-    attack[:, 6] = np.random.choice([32, 128, 252, 255], n_attack)  # sttl
-    attack[:, 5] = np.abs(np.random.exponential(5000, n_attack))  # rate
-    attack[:, 8] = np.abs(np.random.exponential(3000, n_attack))  # sload
+    os.makedirs(data_dir, exist_ok=True)
 
-    features = np.vstack([benign, attack])
-    labels = np.array([0]*n_benign + [1]*n_attack, dtype=np.int64)
+    print("  Downloading KDD Cup 99 dataset (real network intrusion data)...")
+    print("  Using 10% subset for manageable size...")
+    kdd = fetch_kddcup99(as_frame=True, percent10=True, data_home=data_dir)
+    df = kdd.frame
 
-    shuffle_idx = np.random.permutation(n_samples)
-    features = features[shuffle_idx]
-    labels = labels[shuffle_idx]
+    print(f"  Raw dataset shape: {df.shape}")
+    print(f"  Columns: {list(df.columns)}")
 
-    feature_names = UNSW_FEATURE_NAMES if n_features == 39 else \
-        [f'feature_{i}' for i in range(n_features)]
+    # Separate target
+    target_col = df.columns[-1]  # 'labels' column
+    labels_raw = df[target_col].copy()
+    feature_df = df.drop(columns=[target_col])
 
-    return features, labels, feature_names
+    # Create binary labels: normal (0) vs attack (1)
+    # KDD labels are bytes like b'normal.' or b'smurf.' etc.
+    labels_str = labels_raw.astype(str).str.strip().str.rstrip('.')
+    binary_labels = (labels_str != "b'normal'").astype(np.int64).values
+
+    # Also try decoding if they are actual bytes
+    try:
+        decoded = labels_raw.apply(
+            lambda x: x.decode('utf-8').strip().rstrip('.')
+            if isinstance(x, bytes) else str(x).strip().rstrip('.')
+        )
+        binary_labels = (decoded != 'normal').astype(np.int64).values
+    except Exception:
+        pass
+
+    print(f"  Label distribution: Normal={np.sum(binary_labels == 0)}, "
+          f"Attack={np.sum(binary_labels == 1)}")
+
+    # Encode categorical features (protocol_type, service, flag)
+    le_dict = {}
+    feature_names = list(feature_df.columns)
+    for col in feature_df.columns:
+        if feature_df[col].dtype == 'object' or feature_df[col].dtype.name == 'category':
+            le = LabelEncoder()
+            # Handle bytes
+            feature_df[col] = feature_df[col].apply(
+                lambda x: x.decode('utf-8') if isinstance(x, bytes) else str(x)
+            )
+            feature_df[col] = le.fit_transform(feature_df[col])
+            le_dict[col] = le
+
+    features = feature_df.values.astype(np.float32)
+    features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
+
+    print(f"  Final feature matrix: {features.shape}")
+    print(f"  Number of features: {len(feature_names)}")
+    print(f"  Attack ratio: {binary_labels.mean():.3f}")
+
+    return features, binary_labels, feature_names
 
 
 def preprocess_data(features, labels, feature_names=None, test_size=0.2,

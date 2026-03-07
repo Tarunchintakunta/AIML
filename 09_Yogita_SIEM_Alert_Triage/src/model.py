@@ -273,9 +273,9 @@ def print_results(results: Dict[str, Any]) -> None:
 # Quick standalone test
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    from data_loader import generate_synthetic_siem_data, prepare_data
+    from data_loader import load_nsl_kdd, prepare_data
 
-    df = generate_synthetic_siem_data(n_samples=5000, random_state=42)
+    df = load_nsl_kdd()
     data = prepare_data(df)
 
     print("Training Random Forest ...")

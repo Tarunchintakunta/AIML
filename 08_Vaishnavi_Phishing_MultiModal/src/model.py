@@ -281,7 +281,7 @@ def train_all_models(splits: dict, random_state: int = 42) -> dict:
     # ---- Single-modality baselines ----
     single_models = {}
     single_metrics = []
-    for mod in ["text", "url", "temporal"]:
+    for mod in ["url", "content", "external"]:
         sm = SingleModalityModel(mod, random_state=random_state)
         sm.fit(splits[mod]["X_train"], splits[mod]["y_train"])
         m = sm.evaluate(splits[mod]["X_test"], splits[mod]["y_test"])
@@ -327,7 +327,7 @@ def train_all_models(splits: dict, random_state: int = 42) -> dict:
     prob_fusion = ProbabilityFusion()
     prob_fusion.fit(single_models)
     X_test_dict = {mod: splits[mod]["X_test"] for mod in
-                   ["text", "url", "temporal"]}
+                   ["url", "content", "external"]}
     m = prob_fusion.evaluate(X_test_dict, splits["combined"]["y_test"])
     print_metrics(m)
     fusion_models["prob"] = prob_fusion
