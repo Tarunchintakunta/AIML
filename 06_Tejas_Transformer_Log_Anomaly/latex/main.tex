@@ -37,7 +37,7 @@
 \newtheorem{proposition}{Proposition}
 
 % ---- Title ----------------------------------------------------------------
-\title{Transformer-Based Anomaly Detection\\in Cloud Security Logs}
+\title{Transformer-Based Anomaly Detection\\in Cloud Security Logs:\\A Lightweight Framework for CPU-Based\\Real-Time Deployment}
 
 \author{
   \IEEEauthorblockN{Tejas Vijay Mariyappagoudar}
@@ -57,31 +57,7 @@
 % ABSTRACT
 % ===========================================================================
 \begin{abstract}
-Cloud computing environments generate vast quantities of system logs that are
-critical for security monitoring, fault diagnosis, and regulatory compliance.
-Manual inspection of these logs is infeasible at scale, motivating automated
-anomaly detection approaches.  This paper proposes and evaluates a modular
-pipeline that pairs transformer-based sentence embeddings---specifically
-DistilBERT and MiniLM architectures---with three unsupervised anomaly
-detectors (Isolation Forest, Local Outlier Factor, and One-Class SVM) for
-detecting anomalous events in cloud security logs.  We formalise the
-anomaly detection problem as probabilistic inference over a learned embedding
-space, derive the Isolation Forest anomaly score from first principles, and
-provide a rigorous geometric argument grounded in embedding space geometry.
-Experiments on real system logs from the LogHub repository---comprising 2,000
-HDFS, 2,000 BGL, and 2,000 Thunderbird log lines (6,000 total, 223 anomalies,
-3.7\% anomaly ratio)---demonstrate that transformer-derived embeddings yield
-F1 improvements of 63\% over TF-IDF baselines, with the Transformer +
-Isolation Forest pipeline achieving F1~=~0.547 (95\% CI: [0.523, 0.571],
-$n{=}10$ seeds).  Friedman test with post-hoc Wilcoxon pairwise comparisons
-confirms statistically significant differences across detector families
-($p < 0.01$).  A comprehensive embedding space analysis using silhouette
-scores and Calinski--Harabasz indices quantifies the geometric superiority of
-transformer representations over TF-IDF features.  All configurations operate
-within sub-second latency on CPU-only hardware, and a comparison with published
-baselines (DeepLog, LogAnomaly, LogRobust) contextualises performance.  We
-discuss threats to validity, threshold sensitivity, and ethical dimensions
-including NIS2 compliance, false-negative security risk, and PII leakage.
+Cloud computing environments generate vast quantities of system logs critical for security monitoring and compliance. Manual inspection is infeasible at scale, motivating automated anomaly detection. This paper evaluates a modular pipeline pairing transformer-based embeddings---DistilBERT and MiniLM---with three unsupervised anomaly detectors (Isolation Forest, Local Outlier Factor, One-Class SVM) for detecting anomalous events in cloud security logs. Experiments on real system logs from the LogHub repository (6,000 total lines, 223 anomalies) demonstrate that transformer embeddings yield F1 improvements of 63\% over TF-IDF baselines, with Transformer + Isolation Forest achieving F1=0.547 (95\% CI: [0.523, 0.571]). Friedman tests confirm statistically significant differences across detector families ($p < 0.01$). All configurations operate within sub-second latency on CPU-only hardware.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -145,7 +121,7 @@ This paper addresses these gaps with the following contributions:
           scores~\cite{rousseeuw1987} and Calinski--Harabasz
           indices~\cite{calinski1974}, formally quantifying the geometric
           superiority of transformer representations.
-    \item We apply Friedman tests with post-hoc Wilcoxon signed-rank tests
+    \item We apply Friedman tests with post-hoc Wilcoxon signed-rank tests~\cite{wilcoxon1945}
           and Cohen's~$d$ effect sizes across 10 random seeds to confirm
           statistical significance of all reported improvements.
     \item We conduct a threshold sensitivity analysis and discuss ROC/PR
@@ -248,6 +224,10 @@ networks with semantic event representations, reporting F1 of 0.97 on HDFS
 and demonstrating robustness to log evolution.  LogRobust's finding that
 semantic representations outperform template indices under distribution shift
 directly supports our choice of transformer embeddings over lexical features.
+Wu et al.~\cite{wu2023} further advance log anomaly detection by combining
+pre-trained language models with contrastive learning objectives, demonstrating
+that self-supervised representation learning on log data can significantly
+reduce dependence on labelled anomalies.
 
 \subsection{Transformer Models for Log Analysis}
 
@@ -668,7 +648,7 @@ anomaly class imbalance, $F_1$ is the primary metric.  For all primary
 metrics we compute:
 \begin{itemize}
     \item Mean $\pm$ standard deviation across 10 random seeds.
-    \item 95\% bootstrap confidence intervals (10{,}000 resamples).
+    \item 95\% bootstrap confidence intervals~\cite{efron1993} (10{,}000 resamples).
     \item Cohen's $d$ effect sizes for pairwise comparisons.
     \item Wilcoxon signed-rank test $p$-values for pairwise comparisons.
     \item Friedman test for omnibus comparison across detector families.
@@ -1297,7 +1277,9 @@ Forest re-training; (3)~integration of semi-supervised methods that leverage
 small amounts of labelled data; (4)~SHAP-based explanation of Isolation
 Forest anomaly scores for human-readable alert justification; and
 (5)~federated log anomaly detection for privacy-preserving multi-tenant
-cloud environments.
+cloud environments; and (6)~synthetic data augmentation~\cite{jordon2022}
+to address the scarcity of labelled anomaly samples in security-critical
+domains.
 
 % ===========================================================================
 % VII. CONCLUSION

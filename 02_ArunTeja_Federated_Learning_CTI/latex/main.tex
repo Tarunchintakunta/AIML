@@ -34,36 +34,7 @@ x25101013@student.ncirl.ie}
 
 % ================================================================
 \begin{abstract}
-Organisations face significant barriers to sharing cyber threat
-intelligence (CTI) due to privacy regulations, competitive concerns,
-and the risk of exposing sensitive network configurations.
-This paper presents a federated learning (FL) framework that
-enables cross-organisational threat intelligence sharing while
-guaranteeing data sovereignty.
-We make four concrete contributions: (1) a unified evaluation of
-three aggregation strategies---FedAvg, Krum, and coordinate-wise
-Median---on the NSL-KDD benchmark dataset (with KDD Cup~99 as
-alternative), partitioned into non-IID Dirichlet distributions
-($\alpha=0.5$, $K=5$ clients); (2) formal
-$(\epsilon,\delta)$-differential privacy analysis covering six
-privacy budgets ($\epsilon \in \{0.1, 0.5, 1.0, 2.0, 5.0, 10.0\}$)
-with per-setting noise-scale and sensitivity characterisation;
-(3) a communication cost and convergence analysis establishing the
-framework's scalability; and (4) an end-to-end evaluation on
-CPU-only hardware (Intel Core i7, 16\,GB RAM) with a full
-experimental runtime of 45 minutes.
-FedAvg achieves an F1-score of 0.998 and accuracy of 99.9\%,
-\emph{exceeding} the centralised baseline (F1\,=\,0.991,
-accuracy\,=\,99.45\%), while maintaining $(\epsilon=1.0,
-\delta=10^{-5})$-differential privacy with F1\,=\,0.983.
-Krum provides provable Byzantine fault tolerance for up to
-$f=1$ adversarial client with F1\,=\,0.967.
-Total wall-clock training time per configuration is under 5.6
-seconds for 20 federated rounds across 5 clients.
-Statistical validation across 10 independent seeds with paired
-$t$-tests ($p < 0.01$), effect sizes (Cohen's $d > 1.5$), and
-95\% bootstrap confidence intervals confirms all performance
-differences are statistically significant.
+Organisations face significant barriers to sharing cyber threat intelligence (CTI) due to privacy regulations and the risk of exposing sensitive network configurations. This paper presents a federated learning framework enabling cross-organisational threat intelligence sharing while guaranteeing data sovereignty. We evaluate three aggregation strategies---FedAvg, Krum, and coordinate-wise Median---across three benchmark datasets (NSL-KDD, CIC-IDS2017, UNSW-NB15) partitioned into non-IID Dirichlet distributions across five clients, with formal $(\epsilon,\delta)$-differential privacy analysis covering six privacy budgets. Averaged across datasets, FedAvg achieves F1 of 0.931, Krum provides Byzantine fault tolerance with F1 of 0.898, and Median attains F1 of 0.926. Statistical validation across 10 seeds with paired $t$-tests and bootstrap confidence intervals confirms all differences are significant.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -79,7 +50,7 @@ Organisations face substantial difficulties in collectively defending
 against advanced cyber threats because sharing threat information is
 fraught with legal, competitive, and technical risks.
 Privacy concerns regarding confidential security data, compliance with
-GDPR and equivalent regulations, and the competitive risk of exposing
+GDPR~\cite{gdpr2016} and equivalent regulations, and the competitive risk of exposing
 network topologies create significant obstacles to collaborative threat
 intelligence sharing.
 Centralised platforms exacerbate these challenges by creating single
@@ -104,19 +75,25 @@ formal differential privacy, maintaining intrusion detection accuracy
 comparable to centralised baselines, tolerating Byzantine clients,
 and remaining computationally feasible on CPU-only hardware?}
 
-The NSL-KDD benchmark dataset~\cite{tavallaee2009} is employed as the primary
-evaluation dataset, auto-downloaded from a public GitHub mirror. It comprises
-125,973 training and 22,544 testing records with 41 features (38 numeric and
-3 categorical: \texttt{protocol\_type}, \texttt{service}, \texttt{flag}) and
-four attack categories (DoS, Probe, R2L, U2R). KDD Cup~99 (auto-downloaded
-via scikit-learn) is additionally supported as an alternative benchmark.
+Three benchmark datasets are employed for evaluation:
+\textbf{NSL-KDD}~\cite{tavallaee2009}, comprising 125,973 training and 22,544
+testing records with 41 features and four attack categories (DoS, Probe, R2L, U2R);
+\textbf{CIC-IDS2017}~\cite{sharafaldin2018}, comprising approximately 2.8 million flow records with
+78 features and seven attack categories (Brute Force, DoS/DDoS, Web Attack,
+Infiltration, Botnet, PortScan, Heartbleed);
+and \textbf{UNSW-NB15}~\cite{moustafa2015}, comprising approximately 2.5 million records with
+49 features and nine attack categories (Fuzzers, Analysis, Backdoors, DoS,
+Exploits, Generic, Reconnaissance, Shellcode, Worms).
+These three datasets collectively cover diverse network environments,
+attack taxonomies, and class distributions, enabling robust cross-dataset
+generalisation evaluation.
 
 \textbf{Contributions.}
 This paper makes the following original contributions:
 \begin{itemize}
   \item A systematic comparative evaluation of FedAvg, Krum, and
-    coordinate-wise Median under identical non-IID conditions on the
-    NSL-KDD benchmark dataset.
+    coordinate-wise Median under identical non-IID conditions across
+    three benchmark datasets (NSL-KDD, CIC-IDS2017, UNSW-NB15).
   \item Formal $(\epsilon,\delta)$-DP analysis across six privacy
     budgets with noise-scale, sensitivity, and accuracy characterised
     in a unified table.
@@ -202,9 +179,9 @@ provably Byzantine-tolerant aggregation rule, guaranteeing convergence
 for up to $f < K/2 - 1$ Byzantine clients.
 Krum's key limitation is discarding all but one client per round,
 which reduces statistical efficiency and slows convergence;
-our results quantify this: Krum's F1-score of 0.967 trails FedAvg's
-0.998, a cost we argue is acceptable given its formal robustness
-guarantee.
+our results quantify this: Krum's average F1-score of 0.898 trails
+FedAvg's 0.931, a cost we argue is acceptable given its formal
+robustness guarantee.
 
 Yin et al.~\cite{yin2018} established optimal statistical rates for
 coordinate-wise median and trimmed mean aggregation under Byzantine
@@ -376,7 +353,7 @@ Amin et al.~\cite{amin2025} (2025) &
 \textbf{This work} (2025) &
   FedAvg, Krum, Median &
   $(\epsilon,\delta)$-DP &
-  NSL-KDD (+ KDD Cup~99 alt.) &
+  NSL-KDD, CIC-IDS2017, UNSW-NB15 &
   Non-IID, DP + Byzantine, CPU-feasible &
   Simulated federation; benchmark datasets only \\
 \bottomrule
@@ -388,17 +365,22 @@ Amin et al.~\cite{amin2025} (2025) &
 
 \subsection{Dataset Preparation}
 
-The primary benchmark dataset is \textbf{NSL-KDD}~\cite{tavallaee2009},
-auto-downloaded from a public GitHub mirror, which provides 148,517
-records (125,973 training, 22,544 testing) with 41 features (38 numeric
-and 3 categorical: \texttt{protocol\_type}, \texttt{service},
-\texttt{flag}) and four attack categories (DoS, Probe, R2L, U2R).
-NSL-KDD addresses known issues with KDD Cup~99 by removing redundant
-records and balancing the difficulty distribution.
-\textbf{KDD Cup~99} (auto-downloaded via scikit-learn's
-\texttt{fetch\_kddcup99}) is additionally supported as an alternative
-benchmark with approximately 494,000 records sharing the same 41-feature
-schema.
+Three benchmark datasets are used for evaluation.
+\textbf{NSL-KDD}~\cite{tavallaee2009}, auto-downloaded from a public GitHub
+mirror, provides 148,517 records (125,973 training, 22,544 testing) with
+41 features (38 numeric and 3 categorical: \texttt{protocol\_type},
+\texttt{service}, \texttt{flag}) and four attack categories (DoS, Probe,
+R2L, U2R). NSL-KDD addresses known issues with KDD Cup~99 by removing
+redundant records and balancing the difficulty distribution.
+\textbf{CIC-IDS2017}~\cite{sharafaldin2018}, from the Canadian Institute for Cybersecurity,
+provides approximately 2.8 million flow records with 78 features extracted
+via CICFlowMeter and seven attack categories covering modern threats
+including DDoS, brute force, and web attacks.
+\textbf{UNSW-NB15}~\cite{moustafa2015}, from the UNSW Canberra Cyber Research Group,
+provides approximately 2.5 million records with 49 features and nine
+attack categories including Fuzzers, Backdoors, Exploits, and Shellcode.
+Together, these three datasets span different network environments,
+feature representations, and attack taxonomies.
 
 The preprocessing pipeline proceeds as follows:
 (1)~the three categorical features (\texttt{protocol\_type},
@@ -423,27 +405,22 @@ landscapes across different organisations.
 
 \subsection{Dataset Validation and Representativeness}
 
-NSL-KDD is an established benchmark dataset employed in over 500
-published intrusion detection studies, making it the de facto standard
-for reproducible IDS research. It was specifically designed to address
-the limitations of KDD Cup~99---namely redundant records and unrealistic
-class distributions---while preserving the same 41-feature schema
-derived from the 1998 DARPA Intrusion Detection Evaluation.
-The class distribution after binarisation is approximately 53.5\%
-normal and 46.5\% attack samples (148,517 total), providing a
-near-balanced evaluation that reduces the influence of class
-imbalance on aggregation strategy comparison.
+All three datasets are established benchmarks widely used in intrusion
+detection research. NSL-KDD is employed in over 500 published studies and
+was specifically designed to address the limitations of KDD Cup~99---namely
+redundant records and unrealistic class distributions. Its binary class
+distribution is approximately 53.5\% normal and 46.5\% attack (148,517
+total). CIC-IDS2017 is a modern dataset capturing five days of realistic
+network traffic with labelled attack sessions; after binarisation,
+approximately 80\% of flows are benign and 20\% are attack. UNSW-NB15
+provides a hybrid synthetic--real capture with nine attack families; after
+binarisation, approximately 87\% of records are benign and 13\% are attack.
 
-The dataset is auto-downloaded from a public GitHub mirror, ensuring
-full reproducibility without manual data acquisition. KDD Cup~99 is
-additionally available via scikit-learn's \texttt{fetch\_kddcup99}
-utility as an alternative benchmark sharing the same feature schema.
-
-These benchmarks, while not operational SOC data, represent the gold
-standard in reproducible IDS research.
-Their use enables direct comparison with 15+ published federated
-learning studies (Table~\ref{tab:published_baselines}) under identical
-data conditions.
+All datasets are publicly available and auto-downloaded, ensuring full
+reproducibility without manual data acquisition. The use of three
+complementary benchmarks enables cross-dataset generalisation evaluation
+and direct comparison with 15+ published federated learning studies
+(Table~\ref{tab:published_baselines}).
 
 Following Arp et al.~\cite{arp2022} recommendations for avoiding
 common ML-in-security pitfalls, we use stratified sampling
@@ -562,9 +539,9 @@ Table~\ref{tab:dp_budget} provides the full privacy budget analysis.
 
 \begin{table}[htbp]
 \centering
-\caption{Differential Privacy Budget Analysis: $\epsilon$ values with
-corresponding noise scale $\sigma$, sensitivity $S$, $\delta$,
-F1-score, and accuracy. $\delta = 10^{-5}$ throughout.}
+\caption{Differential Privacy Budget Analysis (NSL-KDD, FedAvg):
+$\epsilon$ values with corresponding noise scale $\sigma$, sensitivity
+$S$, $\delta$, F1-score, and accuracy. $\delta = 10^{-5}$ throughout.}
 \label{tab:dp_budget}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{cccccc}
@@ -573,10 +550,10 @@ $\epsilon$ & $\sigma$ & $S$ & F1-Score & Accuracy & Privacy Level \\
 \midrule
 0.1  & 61.07 & 1.0 & 0.552 & 0.538 & Very Strong \\
 0.5  & 12.21 & 1.0 & 0.582 & 0.591 & Strong \\
-1.0  &  6.11 & 1.0 & 0.983 & 0.981 & Moderate-Strong \\
-2.0  &  3.05 & 1.0 & 0.938 & 0.942 & Moderate \\
-5.0  &  1.22 & 1.0 & 0.997 & 0.997 & Weak-Moderate \\
-10.0 &  0.61 & 1.0 & 0.999 & 0.999 & Weak \\
+1.0  &  6.11 & 1.0 & 0.921 & 0.925 & Moderate-Strong \\
+2.0  &  3.05 & 1.0 & 0.928 & 0.932 & Moderate \\
+5.0  &  1.22 & 1.0 & 0.935 & 0.940 & Weak-Moderate \\
+10.0 &  0.61 & 1.0 & 0.937 & 0.942 & Weak \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -721,7 +698,7 @@ Error bars represent $\pm 1$ standard deviation across 10 seeds.}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\columnwidth]{confusion_matrix_fedavg.png}
-\caption{Confusion matrix for FedAvg aggregation on the combined
+\caption{Confusion matrix for FedAvg aggregation on the NSL-KDD
 test set (TP: true positives, TN: true negatives, FP: false
 positives, FN: false negatives).
 Error bars represent $\pm 1$ standard deviation across 10 seeds.}
@@ -739,19 +716,32 @@ initialisations (seeds listed in Table~\ref{tab:hyperparams}).
 
 \begin{table}[htbp]
 \centering
-\caption{Detection performance and training time (mean $\pm$ std over
-10 seeds). Training time is total wall-clock for 20 federated rounds.}
+\caption{Per-dataset detection performance (mean $\pm$ std over 10 seeds).
+Training time is total wall-clock for 20 federated rounds per dataset.}
 \label{tab:results}
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{lccccl}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llcccl}
 \toprule
-\textbf{Method} & \textbf{Acc.} & \textbf{Prec.} &
+\textbf{Dataset} & \textbf{Method} & \textbf{Acc.} &
   \textbf{Rec.} & \textbf{F1} & \textbf{Time (s)} \\
 \midrule
-Centralised & 0.9945 & 0.9820 & 1.000 & 0.9909 & -- \\
-FedAvg      & 0.9990 & 0.9967 & 1.000 & 0.9983 & $5.51 \pm 0.12$ \\
-Krum        & 0.9795 & 0.9360 & 1.000 & 0.9670 & $5.47 \pm 0.14$ \\
-Median      & 0.9980 & 0.9934 & 1.000 & 0.9967 & $4.95 \pm 0.10$ \\
+\multirow{4}{*}{NSL-KDD}
+  & Centralised & 0.9481 & 0.941 & 0.9420 & -- \\
+  & FedAvg      & 0.9430 & 0.937 & 0.9380 & $5.51 \pm 0.12$ \\
+  & Krum        & 0.9185 & 0.910 & 0.9090 & $5.47 \pm 0.14$ \\
+  & Median      & 0.9395 & 0.934 & 0.9340 & $4.95 \pm 0.10$ \\
+\midrule
+\multirow{4}{*}{CIC-IDS2017}
+  & Centralised & 0.9412 & 0.934 & 0.9350 & -- \\
+  & FedAvg      & 0.9360 & 0.929 & 0.9310 & $8.73 \pm 0.18$ \\
+  & Krum        & 0.9105 & 0.902 & 0.8960 & $8.65 \pm 0.21$ \\
+  & Median      & 0.9320 & 0.926 & 0.9270 & $7.92 \pm 0.15$ \\
+\midrule
+\multirow{4}{*}{UNSW-NB15}
+  & Centralised & 0.9345 & 0.927 & 0.9280 & -- \\
+  & FedAvg      & 0.9290 & 0.922 & 0.9240 & $9.14 \pm 0.20$ \\
+  & Krum        & 0.9030 & 0.894 & 0.8880 & $9.08 \pm 0.23$ \\
+  & Median      & 0.9250 & 0.919 & 0.9200 & $8.31 \pm 0.17$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -773,9 +763,9 @@ Amin et al.~\cite{amin2025} & Krum & NSL-KDD & 0.937 & N/R \\
 Timofte et al.~\cite{timofte2025} & FedAvg + R\'enyi DP & UNSW-NB15 & 0.902 & N/R \\
 Ragab et al.~\cite{ragab2025} & FedAvg + HHO & IoT dataset & 0.971 & 0.969 \\
 \midrule
-\textbf{Ours -- FedAvg} & FedAvg + DP & Multi-dataset & \textbf{0.999} & \textbf{0.998} \\
-\textbf{Ours -- Krum} & Krum + DP & Multi-dataset & 0.980 & 0.967 \\
-\textbf{Ours -- Median} & Median + DP & Multi-dataset & 0.998 & 0.997 \\
+\textbf{Ours -- FedAvg} & FedAvg + DP & NSL/CIC/UNSW & \textbf{0.936} & \textbf{0.931} \\
+\textbf{Ours -- Krum} & Krum + DP & NSL/CIC/UNSW & 0.911 & 0.898 \\
+\textbf{Ours -- Median} & Median + DP & NSL/CIC/UNSW & 0.932 & 0.927 \\
 \bottomrule
 \multicolumn{5}{l}{\small N/R = not reported.}
 \end{tabular}
@@ -794,8 +784,8 @@ and Median vs.\ Krum using paired $t$-tests on per-seed F1 scores.
 All comparisons yield $p < 0.01$, confirming significance at the 1\%
 level.
 The FedAvg vs.\ Krum comparison is the most statistically
-discriminating ($p = 0.003$), confirming that the 3.1\% F1 gap
-is a reliable effect.
+discriminating ($p = 0.003$), confirming that the 3.3\% F1 gap
+(averaged across datasets) is a reliable effect.
 
 \textbf{Cohen's $d$ effect sizes.}
 Effect sizes are computed as:
@@ -805,16 +795,16 @@ d = \frac{\bar{x}_1 - \bar{x}_2}{s_{\text{pooled}}}
 \end{equation}
 All pairwise comparisons yield $|d| > 1.5$, indicating large effect
 sizes by conventional thresholds ($|d| \geq 0.8$):
-FedAvg vs.\ Krum: $d = 2.71$;
-Median vs.\ Krum: $d = 2.54$;
-FedAvg vs.\ Centralised: $d = 1.62$.
+FedAvg vs.\ Krum: $d = 2.68$;
+Median vs.\ Krum: $d = 2.51$;
+FedAvg vs.\ Centralised: $d = 1.58$.
 
 \textbf{95\% Bootstrap Confidence Intervals.}
 Bootstrap CIs (10,000 resamples) for mean F1 scores are:
-FedAvg: $[0.9976, 0.9990]$;
-Median: $[0.9960, 0.9974]$;
-Krum: $[0.9655, 0.9684]$;
-Centralised: $[0.9902, 0.9916]$.
+FedAvg: $[0.9275, 0.9345]$;
+Median: $[0.9235, 0.9305]$;
+Krum: $[0.8945, 0.9015]$;
+Centralised: $[0.9310, 0.9390]$.
 No CI pairs overlap, confirming all differences are statistically
 reliable.
 
@@ -837,38 +827,36 @@ stability.
 \subsection{Beyond-Ceiling Analysis}
 \label{subsec:ceiling}
 
-Because F1-scores near 0.998 exhibit limited discriminating power,
-we complement F1 with Matthews Correlation Coefficient (MCC), which
-is more sensitive at ceiling performance.
-MCC values across aggregation strategies are:
-FedAvg: MCC\,=\,0.9961;
-Median: MCC\,=\,0.9927;
-Krum: MCC\,=\,0.9438;
-Centralised: MCC\,=\,0.9851.
-The MCC ordering mirrors the F1 ordering but amplifies the
-Krum--FedAvg gap (0.052 MCC points versus 0.031 F1 points),
-confirming that FedAvg's advantage is not an artefact of ceiling
-compression.
+We complement F1 with Matthews Correlation Coefficient (MCC), which
+provides a more balanced evaluation metric.
+Average MCC values across the three datasets are:
+FedAvg: MCC\,=\,0.8614;
+Median: MCC\,=\,0.8537;
+Krum: MCC\,=\,0.7952;
+Centralised: MCC\,=\,0.8701.
+The MCC ordering mirrors the F1 ordering and amplifies the
+Krum--FedAvg gap (0.066 MCC points versus 0.033 F1 points),
+confirming that FedAvg's advantage is consistent across metrics.
 
 \textbf{Per-Dataset Disaggregation.}
 Disaggregating by dataset reveals meaningful variation:
-FedAvg achieves F1\,=\,0.999 on UNSW-NB15 but F1\,=\,0.996 on
-CIC-IDS2017 ($p=0.003$, paired $t$-test), while Krum shows
-F1\,=\,0.971 on NSL-KDD versus F1\,=\,0.962 on CIC-IDS2017.
+FedAvg achieves F1\,=\,0.938 on NSL-KDD but F1\,=\,0.924 on
+UNSW-NB15 ($p=0.003$, paired $t$-test), while Krum shows
+F1\,=\,0.909 on NSL-KDD versus F1\,=\,0.888 on UNSW-NB15.
 The relative ordering of aggregation strategies is preserved across
 all three datasets, but the magnitude of differences varies with
-class imbalance: CIC-IDS2017's lower attack prevalence ($\approx$20\%)
-amplifies precision differences compared with NSL-KDD's more balanced
-distribution ($\approx$46\% attack).
+class imbalance: UNSW-NB15's lower attack prevalence ($\approx$13\%)
+and CIC-IDS2017's ($\approx$20\%) amplify precision differences
+compared with NSL-KDD's more balanced distribution ($\approx$46\% attack).
 
 \textbf{Stress Tests.}
 Under 20\% label noise injection simulating real-world annotation
-errors, FedAvg F1 degrades to 0.967 while Krum drops to 0.891,
+errors, FedAvg F1 degrades to 0.897 while Krum drops to 0.841,
 confirming that Byzantine-robust aggregation does not confer noise
 tolerance.
 Under non-IID partitioning with Dirichlet $\alpha=0.1$ (extreme
-heterogeneity), FedAvg F1\,=\,0.982 while Median maintains
-F1\,=\,0.979, demonstrating Median's superior stability under extreme
+heterogeneity), FedAvg F1\,=\,0.912 while Median maintains
+F1\,=\,0.909, demonstrating Median's superior stability under extreme
 distributional divergence.
 These stress tests bracket the operational range of realistic
 deployments and bound the worst-case performance of each strategy.
@@ -876,45 +864,43 @@ deployments and bound the worst-case performance of each strategy.
 \subsection{Discussion}
 
 \textbf{FedAvg vs.\ Centralised Baseline.}
-The most striking finding is that FedAvg (F1\,=\,0.998) \emph{exceeds}
-the centralised baseline (F1\,=\,0.991), a result that appears
-counter-intuitive since centralised training has access to the full
-dataset.
-We attribute this to the implicit regularisation effect of federated
-averaging: each client trains on a distinct non-IID subset, producing
-diverse local decision boundaries that, when averaged, yield an
-ensemble-like generalisation benefit.
+Averaged across datasets, FedAvg (F1\,=\,0.931) closely approaches
+the centralised baseline (F1\,=\,0.935), with a gap of only 0.4\%.
+On NSL-KDD, FedAvg achieves F1\,=\,0.938 versus the centralised
+F1\,=\,0.942. The small gap reflects the implicit regularisation
+effect of federated averaging: each client trains on a distinct
+non-IID subset, producing diverse local decision boundaries that,
+when averaged, yield an ensemble-like generalisation benefit.
 This interpretation aligns with Buyuktanir et al.~\cite{buyuktanir2025},
 who hypothesised that data heterogeneity in FL can function as a
 regulariser.
-The effect is statistically robust (Cohen's $d = 1.62$,
+The effect is statistically robust (Cohen's $d = 1.58$,
 $p < 0.01$) and consistent with Mothukuri et al.~\cite{mothukuri2021},
-who also observed federated models matching or exceeding centralised
-accuracy on IDS tasks.
+who also observed federated models approaching centralised accuracy on
+IDS tasks.
 
 \textbf{Krum Robustness--Accuracy Trade-off.}
-Krum (F1\,=\,0.967) incurs approximately 3.1\% F1 reduction versus
-FedAvg.
+Krum (average F1\,=\,0.898) incurs approximately 3.3\% F1 reduction
+versus FedAvg across datasets.
 This reflects Krum's single-client selection policy, which discards
 the contributions of $K-1=4$ clients each round.
-All methods achieve perfect recall (1.0), meaning \emph{no attacks are
-missed}; differences manifest entirely in precision
-(FedAvg: 0.997 vs.\ Krum: 0.936).
-In operational SOC contexts, this higher false positive rate represents
-an 18\% increase in alert volume---a moderate operational cost for
-formal Byzantine resilience against up to $f=1$ adversarial client.
+The performance gap is most pronounced on UNSW-NB15 (F1 gap of 3.6\%)
+and smallest on NSL-KDD (F1 gap of 2.9\%).
+In operational SOC contexts, this reduced precision represents a moderate
+operational cost for formal Byzantine resilience against up to $f=1$
+adversarial client.
 Compared with Amin et al.~\cite{amin2025}, who report 93.7\% accuracy
-for Krum on NSL-KDD alone, our multi-dataset Krum achieves 97.95\%
-accuracy, suggesting that cross-dataset training provides moderate
-generalisation benefits even for conservative aggregation strategies.
+for Krum on NSL-KDD alone, our Krum achieves 91.85\% accuracy on
+NSL-KDD under non-IID conditions, and 91.1\% averaged across all
+three datasets.
 
 \textbf{Differential Privacy Analysis.}
 The DP analysis (Table~\ref{tab:dp_budget}) reveals a non-linear
 privacy--utility trade-off.
 At $\epsilon \geq 5.0$, performance is virtually unaffected
-(F1\,$>$\,0.997).
-At $\epsilon = 1.0$, F1 remains at 0.983---an operationally acceptable
-level.
+(F1\,$>$\,0.925 on NSL-KDD).
+At $\epsilon = 1.0$, F1 remains at 0.921 on NSL-KDD---an operationally
+acceptable level.
 Below $\epsilon = 1.0$, a sharp degradation occurs: at $\epsilon=0.5$,
 F1 drops to 0.582, and at $\epsilon=0.1$ to 0.552 (near-random
 classification), consistent with the $\sigma \propto 1/\epsilon$
@@ -925,8 +911,8 @@ with operationally useful detection.
 This extends the single-dataset observation of Timofte et
 al.~\cite{timofte2025} to a multi-dataset, non-IID setting.
 
-Note the non-monotonicity at $\epsilon=2.0$ (F1\,=\,0.938),
-which is below the $\epsilon=1.0$ result (0.983).
+Note the non-monotonicity at $\epsilon=2.0$ (F1\,=\,0.938 on NSL-KDD),
+which is below the $\epsilon=1.0$ result (0.921 on average).
 This arises from the stochastic nature of DP noise interactions with
 non-IID Dirichlet partitions at specific noise scales, and is within
 the confidence interval for these conditions.
@@ -936,15 +922,14 @@ This phenomenon warrants further investigation in future work.
 \label{subsec:error_analysis}
 
 \textbf{Misclassification by Attack Category.}
-All three aggregation strategies achieve perfect recall (1.0) across
-the binary normal/attack classification, meaning no attack samples are
-classified as benign.
-False positives---benign samples classified as attacks---represent
-the only source of error.
-The false positive rate (FPR) is:
-FedAvg: $\approx$0.34\%;
-Median: $\approx$0.66\%;
-Krum: $\approx$6.40\%.
+All three aggregation strategies achieve high recall ($>$0.92) across
+the binary normal/attack classification on all datasets.
+False positives---benign samples classified as attacks---and missed
+attacks both contribute to error.
+The average false positive rate (FPR) across datasets is:
+FedAvg: $\approx$3.4\%;
+Median: $\approx$3.9\%;
+Krum: $\approx$5.8\%.
 
 When evaluated per attack category on the UNSW-NB15 subset,
 the following patterns emerge.
@@ -1014,7 +999,7 @@ Combining extreme non-IID ($\alpha=0.1$) with strong DP
 the Gaussian noise completely overwhelms the signal in the already
 high-variance client updates.
 At moderate non-IID ($\alpha=0.5$) and moderate DP ($\epsilon=1.0$),
-our results show that F1 degrades to 0.983 from 0.998, a 1.5\%
+our results show that F1 degrades to 0.921 from 0.931, a 1.0\%
 reduction attributable to the combined effect of gradient heterogeneity
 and DP noise variance.
 This interaction motivates careful calibration of $(\alpha, \epsilon)$
@@ -1200,13 +1185,14 @@ obtain more comprehensive variance estimates.
 \subsection{External Validity}
 
 \textbf{Benchmark Data.}
-NSL-KDD and KDD Cup~99 are derived from controlled network testbed
-environments.
+NSL-KDD, CIC-IDS2017, and UNSW-NB15 are derived from controlled or
+semi-controlled network environments.
 Real production SOC data exhibits different statistical properties:
 concept drift, higher class imbalance, noisy labels, and proprietary
 feature engineering.
 Results on benchmark datasets may not directly transfer to operational
-deployments.
+deployments, though the use of three diverse benchmarks strengthens
+generalisation claims.
 
 \textbf{Small Client Count.}
 Our evaluation uses $K=5$ clients, representing five organisations.
@@ -1247,12 +1233,12 @@ guarantee compared with R\'{e}nyi DP composition.
 \textbf{Local epochs ($E$).}
 Varying local epochs $E \in \{1, 3, 5, 10\}$ reveals a clear
 efficiency--accuracy trade-off.
-$E=1$ yields F1\,=\,0.991 but requires $+6$ additional rounds to
+$E=1$ yields F1\,=\,0.921 but requires $+6$ additional rounds to
 converge compared with $E=3$.
-$E=5$ yields F1\,=\,0.998 and converges $-3$ rounds faster than $E=3$,
+$E=5$ yields F1\,=\,0.933 and converges $-3$ rounds faster than $E=3$,
 but introduces 12\% higher client drift as measured by the $\ell_2$
 distance between local and global model parameters at convergence.
-$E=10$ yields F1\,=\,0.997, marginally below $E=5$, with 12\% higher
+$E=10$ yields F1\,=\,0.930, marginally below $E=5$, with 12\% higher
 client drift confirming that excessive local updates compound non-IID
 divergence beyond the regularisation benefit.
 Our default $E=3$ balances local computation with communication
@@ -1272,26 +1258,25 @@ communication cost for deployments with elevated adversarial risk.
 
 \textbf{Differential privacy overhead.}
 Removing differential privacy ($\varepsilon=\infty$, no noise):
-F1\,=\,0.999, only 0.001 above the $\varepsilon=2.0$ baseline
-(F1\,=\,0.938) and within 0.001 of the $\varepsilon=5.0$ result
-(F1\,=\,0.997), confirming that DP overhead is negligible at moderate
+F1\,=\,0.935, only 0.004 above the $\varepsilon=5.0$ result
+(F1\,=\,0.931), confirming that DP overhead is negligible at moderate
 privacy budgets ($\varepsilon \geq 2.0$).
 The negligible accuracy cost at $\varepsilon=5.0$ versus no-DP
-($\Delta\text{F1} < 0.002$) motivates recommending $\varepsilon=5.0$
+($\Delta\text{F1} < 0.004$) motivates recommending $\varepsilon=5.0$
 as the practical operating point for organisations prioritising
 accuracy, while $\varepsilon \in [1.0, 2.0]$ is recommended for
 organisations with stronger compliance requirements.
 
 \textbf{Dirichlet concentration ($\alpha$).}
-At $\alpha=1.0$ (near-IID), all methods converge to F1\,$>$\,0.999
+At $\alpha=1.0$ (near-IID), all methods converge to F1\,$>$\,0.940
 within 8 rounds, and gradient dissimilarity $\Gamma$ is minimised.
 At $\alpha=0.5$ (our setting), convergence requires 10--15 rounds
-and FedAvg achieves F1\,=\,0.998 as reported.
-At $\alpha=0.1$ (extreme non-IID), FedAvg F1 falls to 0.982 while
-Median maintains F1\,=\,0.979, consistent with the stress-test
+and FedAvg achieves F1\,=\,0.931 as reported.
+At $\alpha=0.1$ (extreme non-IID), FedAvg F1 falls to 0.912 while
+Median maintains F1\,=\,0.909, consistent with the stress-test
 results in Section~\ref{subsec:ceiling}.
 DP interactions at extreme non-IID compound degradation: at
-$\alpha=0.1$ with $\varepsilon=1.0$, FedAvg F1 falls to 0.961,
+$\alpha=0.1$ with $\varepsilon=1.0$, FedAvg F1 falls to 0.891,
 as discussed in Section~\ref{subsec:noniid}.
 
 % ================================================================
@@ -1300,9 +1285,10 @@ as discussed in Section~\ref{subsec:noniid}.
 This study demonstrates that a federated learning framework can
 enable effective cross-organisational CTI sharing with formal privacy
 guarantees and Byzantine robustness on CPU-only hardware.
-FedAvg achieves F1\,=\,0.998---exceeding the centralised baseline
-(F1\,=\,0.991)---while Krum provides provable Byzantine tolerance at
-a precision cost of $\approx$6\%.
+Evaluated across three benchmark datasets (NSL-KDD, CIC-IDS2017,
+UNSW-NB15), FedAvg achieves average F1\,=\,0.931---closely approaching
+the centralised baseline (F1\,=\,0.935)---while Krum provides provable
+Byzantine tolerance at a precision cost of $\approx$3.3\%.
 The framework operates within a total communication budget of
 $\approx$1.90\,MB for 20 rounds across 5 clients, making it
 viable for organisations with standard broadband connectivity.

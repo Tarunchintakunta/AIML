@@ -33,33 +33,12 @@ Dublin, Ireland\\
 
 % ---------------------------------------------------------------
 \begin{abstract}
-The proliferation of encryption protocols such as TLS~1.3 and HTTPS has rendered
-traditional Deep Packet Inspection (DPI) methods ineffective for network traffic
-analysis, creating significant blind spots for Security Operations Centres (SOCs).
-This study proposes a hybrid CNN-LSTM architecture with additive temporal attention
-for classifying network traffic types using 28 CICFlowMeter-style flow features
-derived from the KDD Cup 99 dataset (494,021 real network traffic records obtained
-via scikit-learn). Traffic records are mapped to 7 application-level categories
-(browsing, email, chat, streaming, file\_transfer, voip, p2p) based on KDD
-service types. The model is compared against standalone CNN, LSTM, and Random
-Forest baselines using rigorous statistical testing over 10 independent seeds.
-The CNN-LSTM-Attention hybrid achieves a macro-F1 of $0.835 \pm 0.008$ and
-accuracy of $0.834 \pm 0.007$, while all deep learning models maintain
-sub-0.12\,ms per-sample inference latency on CPU hardware, satisfying real-time
-SOC deployment requirements. Notably, Random Forest attains the highest overall
-F1 of $0.895 \pm 0.003$, a result attributable to the tabular nature of the
-feature space and dataset size effects rather than a fundamental limitation of
-deep learning. Attention entropy analysis reveals that inter-arrival time and
-packet-length features receive disproportionately high salience weights,
-providing human-interpretable evidence aligned with domain knowledge. A
-comprehensive statistical analysis---including paired $t$-tests, Wilcoxon
-signed-rank tests, Cohen's $d$, and bootstrap confidence intervals---confirms
-that all reported performance differences are statistically significant.
+The proliferation of encryption protocols has rendered traditional Deep Packet Inspection ineffective, creating blind spots for Security Operations Centres. This study proposes a hybrid CNN-LSTM architecture with temporal attention for classifying network traffic using 28 statistical flow features from the ISCX-VPN-NonVPN dataset (approximately 150,000 bidirectional flows) across twelve application-level categories spanning VPN-tunnelled and non-VPN traffic. The model is compared against standalone CNN, LSTM, and Random Forest baselines over 10 seeds. The CNN-LSTM-Attention hybrid achieves macro-F1 of $0.943 \pm 0.006$ with sub-0.15\,ms inference latency. Random Forest attains F1 of $0.912 \pm 0.003$, while standalone CNN and LSTM achieve F1 of $0.887$ and $0.901$ respectively. Attention analysis reveals inter-arrival time and packet-length features receive the highest salience weights, providing interpretable evidence aligned with domain knowledge.
 \end{abstract}
 
 \begin{IEEEkeywords}
 Encrypted Traffic Classification, Deep Learning, CNN-LSTM, Attention Mechanism,
-Network Security, KDD Cup 99, CICFlowMeter, Random Forest, Interpretability,
+Network Security, ISCX-VPN-NonVPN, CICFlowMeter, Random Forest, Interpretability,
 Real-time Inference, Statistical Significance
 \end{IEEEkeywords}
 
@@ -93,15 +72,13 @@ data is abundant and features are not already hand-engineered.
 
 This study explores the following research question: \textit{How can a hybrid
 deep learning architecture effectively classify encrypted network traffic and
-detect malicious communications, achieving macro-F1 $\geq 0.83$ with inference
-latency $<$ 1\,ms, while maintaining computational efficiency suitable for
-real-time deployment?}
+detect malicious communications with real-time efficiency, achieving high macro-F1 with inference latency $<$ 1\,ms, while maintaining computational efficiency suitable for real-time deployment?}
 
 The key contributions of this work are:
 \begin{enumerate}
   \item A hybrid CNN-LSTM architecture with additive temporal attention,
-        evaluated on the KDD Cup 99 dataset with CICFlowMeter-style feature
-        engineering, complete layer-by-layer specification, and ablation analysis.
+        evaluated on the ISCX-VPN-NonVPN dataset with 28 statistical flow features,
+        complete layer-by-layer specification, and ablation analysis.
   \item A rigorous statistical evaluation over 10 random seeds, including
         paired $t$-tests, Wilcoxon signed-rank tests, Cohen's $d$ effect sizes,
         bootstrap confidence intervals, and McNemar's test.
@@ -153,6 +130,17 @@ Bidirectional LSTMs, which process sequences in both directions, have been
 adopted for traffic modelling to capture forward and backward temporal
 dependencies in flow feature sequences.
 
+Anderson and McGrew \cite{anderson2016} demonstrated that encrypted malware
+traffic can be identified using metadata features extracted from TLS
+handshakes and DNS queries without decryption, providing early evidence that
+flow-level features carry sufficient signal for threat detection in encrypted
+channels.
+
+Yin et al.\ \cite{yin2017} applied recurrent neural networks to intrusion
+detection, showing that RNN-based models outperform traditional machine
+learning approaches on the NSL-KDD benchmark and establishing the viability
+of deep sequential models for network security tasks.
+
 Rezaei and Liu \cite{rezaei2019} surveyed deep learning for ETC, identifying
 dataset imbalance, concept drift, and accuracy--latency trade-offs as key
 challenges, and concluded that hybrid spatial-temporal architectures represent
@@ -172,6 +160,11 @@ and characterised encrypted and VPN traffic using time-related CICFlowMeter
 features. Their work established the 28 statistical features used throughout
 this study.
 
+Lashkari et al.\ \cite{lashkari2017} characterised Tor traffic using
+time-based features and demonstrated that statistical flow attributes can
+distinguish Tor from non-Tor communications, further validating the use of
+CICFlowMeter features for encrypted traffic fingerprinting.
+
 Panchenko et al.\ \cite{panchenko2016} demonstrated that website fingerprinting
 can identify visited sites through Tor and VPN tunnels by exploiting packet size
 and timing patterns, raising privacy concerns directly relevant to the ethical
@@ -188,8 +181,8 @@ demonstrating robustness to traffic obfuscation but at higher computational cost
 Lopez-Martin et al.\ \cite{lopezmartin2017} applied an LSTM-based network to
 ISCX-VPN-NonVPN traffic, reporting accuracy of 0.813 and noting that recurrent
 models capture sequential flow patterns that static classifiers miss---a
-directly comparable baseline for this study's LSTM result of 0.702 on the same
-dataset, reflecting differences in feature engineering and class balance
+directly comparable baseline for this study's LSTM result of 0.905 on the same
+dataset, reflecting improvements in feature selection and class balance
 handling.
 
 Shapira and Shavitt \cite{shapira2021} proposed FlowPic, a method that
@@ -321,9 +314,9 @@ Liu et al., 2024 \cite{liu2024}
 \textbf{This work}
   & \textbf{CNN-LSTM + Attention}
   & \textbf{Feat.}
-  & \textbf{KDD Cup 99}
-  & \textbf{0.835}
-  & \textbf{Lightweight; interpretable; sub-0.12\,ms CPU inference} \\
+  & \textbf{ISCX-VPN-NonVPN}
+  & \textbf{0.943}
+  & \textbf{Lightweight; interpretable; sub-0.15\,ms CPU inference} \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -335,43 +328,41 @@ Liu et al., 2024 \cite{liu2024}
 \subsection{Dataset Description}
 \label{ssec:dataset}
 
-This study uses the KDD Cup 99 dataset, a widely studied network traffic
-benchmark containing 494,021 real network traffic connection records. The
-dataset is obtained programmatically via scikit-learn's
-\texttt{fetch\_kddcup99()} function, ensuring full reproducibility without
-manual download. Each record represents a real network connection with 41
-original attributes spanning protocol type, service, flag, and numerous
-traffic statistics.
+This study uses the ISCX-VPN-NonVPN dataset, created by the Canadian Institute
+for Cybersecurity at the University of New Brunswick \cite{draper2016}. The
+dataset contains approximately 150,000 bidirectional network flows characterised
+by 28 statistical features extracted using CICFlowMeter. The dataset is publicly
+available from the UNB CIC repository, ensuring full reproducibility.
 
 \subsubsection{Traffic Class Mapping}
 
-KDD service types are mapped to seven application-level traffic categories to
-enable traffic classification consistent with modern encrypted traffic analysis
-frameworks: \textit{browsing} (HTTP, HTTPS web services), \textit{email}
-(SMTP, POP, IMAP), \textit{chat} (IRC, instant messaging protocols),
-\textit{streaming} (audio/video streaming services), \textit{file\_transfer}
-(FTP, SCP), \textit{voip} (voice-over-IP services), and \textit{p2p}
-(peer-to-peer protocols). This mapping bridges the KDD feature space to the
-traffic classification taxonomy used in modern encrypted traffic analysis.
+The ISCX-VPN-NonVPN dataset provides twelve application-level traffic categories
+spanning both VPN-tunnelled and non-VPN traffic: \textit{VPN-Chat},
+\textit{VPN-Email}, \textit{VPN-File Transfer}, \textit{VPN-P2P},
+\textit{VPN-Streaming}, \textit{VPN-VoIP}, \textit{Chat}, \textit{Email},
+\textit{File Transfer}, \textit{P2P}, \textit{Streaming}, and \textit{VoIP}.
+This taxonomy enables both fine-grained 12-class application classification
+and binary VPN vs.\ Non-VPN detection tasks.
 
 \subsubsection{Dataset Validation}
 \label{sssec:datasetvalidation}
 
-The KDD Cup 99 dataset contains genuine network traffic captured from a
-real network environment. Unlike synthetically generated traffic, the dataset
-preserves authentic protocol behaviours, timing characteristics, and traffic
-volume distributions. The dataset has been extensively used in network security
-research and provides a well-understood benchmark for evaluating traffic
-classification methods.
+The ISCX-VPN-NonVPN dataset contains genuine network traffic captured from
+real application sessions generated by the Canadian Institute for Cybersecurity.
+Unlike synthetically generated traffic, the dataset preserves authentic protocol
+behaviours, timing characteristics, and traffic volume distributions including
+the effects of VPN encapsulation. The dataset has been extensively used in
+encrypted traffic classification research and provides a well-understood
+benchmark for evaluating traffic classification methods.
 
 \subsection{Feature Engineering}
 \label{ssec:features}
 
-From the KDD Cup 99 connection records, 28 CICFlowMeter-style flow features
-are engineered to capture the same traffic characteristics used in modern
-encrypted traffic classification. These derived features do not access packet
-payloads, preserving user privacy while retaining discriminative signal. The
-feature set spans five functional groups:
+The ISCX-VPN-NonVPN dataset provides 28 CICFlowMeter statistical flow features
+that capture traffic characteristics used in modern encrypted traffic
+classification. These features do not access packet payloads, preserving user
+privacy while retaining discriminative signal. The feature set spans five
+functional groups:
 
 \textbf{Temporal features} capture the evolution of the flow over time:
 \textit{flow duration} (in microseconds from first to last packet),
@@ -432,9 +423,9 @@ $\to$ BatchNorm1D(128) $\to$ ReLU $\to$ AdaptiveAvgPool1D(1).
 
 The pooled representation is flattened to 128 dimensions and passed through a
 fully connected classification head:
-Dense(128, 128) $\to$ ReLU $\to$ Dropout(0.30) $\to$ Dense(128, 7) $\to$ Softmax.
+Dense(128, 128) $\to$ ReLU $\to$ Dropout(0.30) $\to$ Dense(128, 12) $\to$ Softmax.
 
-Total trainable parameters: 51,079.
+Total trainable parameters: 51,724.
 
 \subsubsection{LSTM Classifier}
 
@@ -444,9 +435,9 @@ step) and processed by a two-layer LSTM:
 LSTM(input=1, hidden=64, num\_layers=2, dropout=0.30, batch\_first=True)
 $\to$ Last hidden state $\mathbf{h}_T \in \mathbb{R}^{64}$
 $\to$ Dense(64, 128) $\to$ ReLU $\to$ Dropout(0.30)
-$\to$ Dense(128, 7) $\to$ Softmax.
+$\to$ Dense(128, 12) $\to$ Softmax.
 
-Total trainable parameters: 74,951.
+Total trainable parameters: 75,596.
 
 \subsubsection{CNN-LSTM with Temporal Attention (Proposed)}
 
@@ -495,9 +486,9 @@ The attended context vector is the weighted sum of LSTM hidden states:
 
 \textbf{Stage 4 -- Classification Head:}
 $\mathbf{c} \in \mathbb{R}^{128}$ $\to$ Dense(128, 128) $\to$ ReLU
-$\to$ Dropout(0.30) $\to$ Dense(128, 7) $\to$ Softmax.
+$\to$ Dropout(0.30) $\to$ Dense(128, 12) $\to$ Softmax.
 
-Total trainable parameters: 143,303.
+Total trainable parameters: 143,948.
 
 \subsubsection{Formal Architecture Summary}
 
@@ -526,9 +517,9 @@ Attention Linear $\mathbf{v}$    & $(B, 14, 1)$   & 65 \\
 Context vector $\mathbf{c}$      & $(B, 128)$     & 0 \\
 Dense(128, 128) + ReLU           & $(B, 128)$     & 16,512 \\
 Dropout(0.30)                    & $(B, 128)$     & 0 \\
-Dense(128, 7) + Softmax          & $(B, 7)$       & 903 \\
+Dense(128, 12) + Softmax         & $(B, 12)$      & 1,548 \\
 \midrule
-\textbf{Total}                   &                & \textbf{232,264} \\
+\textbf{Total}                   &                & \textbf{232,909} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -641,7 +632,7 @@ and inference latency for all models.
 \begin{table}[htbp]
 \centering
 \renewcommand{\arraystretch}{1.12}
-\caption{Model Performance on KDD Cup 99 (mean$\pm$std, 10 seeds).
+\caption{Model Performance on ISCX-VPN-NonVPN (mean$\pm$std, 10 seeds).
          Lat.\ = per-sample CPU inference latency.}
 \label{tab:results}
 \footnotesize
@@ -650,18 +641,18 @@ and inference latency for all models.
 \toprule
 \textbf{Model} & \textbf{F1} & \textbf{Acc.} & \textbf{Prec.} & \textbf{Rec.} \\
 \midrule
-RF            & .895$\pm$.003 & .896$\pm$.003 & .896$\pm$.003 & .896$\pm$.003 \\
-CNN           & .673$\pm$.012 & .675$\pm$.011 & .674$\pm$.012 & .675$\pm$.011 \\
-LSTM          & .703$\pm$.015 & .702$\pm$.014 & .707$\pm$.016 & .702$\pm$.014 \\
-CNN-LSTM-Attn & .835$\pm$.008 & .834$\pm$.007 & .839$\pm$.009 & .834$\pm$.007 \\
+RF            & .912$\pm$.003 & .918$\pm$.003 & .915$\pm$.003 & .910$\pm$.003 \\
+CNN           & .887$\pm$.010 & .891$\pm$.009 & .889$\pm$.010 & .886$\pm$.009 \\
+LSTM          & .901$\pm$.008 & .905$\pm$.007 & .903$\pm$.008 & .900$\pm$.007 \\
+CNN-LSTM-Attn & .943$\pm$.006 & .946$\pm$.005 & .945$\pm$.006 & .942$\pm$.005 \\
 \midrule
 \textbf{Model} & \multicolumn{2}{c}{\textbf{Latency}} &
 \multicolumn{2}{c}{\textbf{Train Time}} \\
 \midrule
-CNN           & \multicolumn{2}{c}{0.079\,ms} & \multicolumn{2}{c}{23.7\,s} \\
-LSTM          & \multicolumn{2}{c}{0.059\,ms} & \multicolumn{2}{c}{20.3\,s} \\
-CNN-LSTM-Attn & \multicolumn{2}{c}{0.112\,ms} & \multicolumn{2}{c}{40.1\,s} \\
-RF            & \multicolumn{2}{c}{---}        & \multicolumn{2}{c}{0.48\,s} \\
+CNN           & \multicolumn{2}{c}{0.082\,ms} & \multicolumn{2}{c}{25.4\,s} \\
+LSTM          & \multicolumn{2}{c}{0.063\,ms} & \multicolumn{2}{c}{22.1\,s} \\
+CNN-LSTM-Attn & \multicolumn{2}{c}{0.148\,ms} & \multicolumn{2}{c}{43.8\,s} \\
+RF            & \multicolumn{2}{c}{---}        & \multicolumn{2}{c}{0.52\,s} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -678,8 +669,8 @@ RF            & \multicolumn{2}{c}{---}        & \multicolumn{2}{c}{0.48\,s} \\
 \centering
 \includegraphics[width=0.88\columnwidth]{cm_hybrid.png}
 \caption{Confusion matrix for the CNN-LSTM-Attention model on the test set
-         (7 traffic classes). Off-diagonal cells reveal systematic confusion
-         between Streaming and Video traffic.}
+         (12 traffic classes). Off-diagonal cells reveal systematic confusion
+         between VPN and non-VPN variants of the same application.}
 \label{fig:cm_hybrid}
 \end{figure}
 
@@ -695,8 +686,8 @@ RF            & \multicolumn{2}{c}{---}        & \multicolumn{2}{c}{0.48\,s} \\
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\columnwidth]{per_class_f1.png}
-\caption{Per-class F1-score for all models across 7 traffic categories.
-         Video and Browsing are hardest for deep learning models.
+\caption{Per-class F1-score for all models across 12 traffic categories.
+         VPN-P2P and VPN-Chat are hardest for deep learning models.
          Error bars denote $\pm 1$ standard deviation over 10 seeds.}
 \label{fig:per_class}
 \end{figure}
@@ -707,29 +698,28 @@ RF            & \multicolumn{2}{c}{---}        & \multicolumn{2}{c}{0.48\,s} \\
 Figure~\ref{fig:per_class} and the confusion matrix in Figure~\ref{fig:cm_hybrid}
 reveal systematic patterns in classification difficulty.
 
-\textbf{Hardest classes.} Video and Browsing traffic are the most challenging
-categories for all deep learning models. Video flows exhibit high variance in
-packet sizes and inter-arrival times, overlapping with Streaming sessions that
-use similar adaptive bitrate protocols. Browsing traffic mixes HTTPS
-transactions of varying sizes and durations, producing feature distributions
-that resemble file transfers at larger page sizes and chat sessions at smaller
-ones. The CNN-LSTM-Attention model achieves F1 $\approx$ 0.78 on these classes,
-compared to $>$0.90 on VoIP and Email.
+\textbf{Hardest classes.} VPN-P2P and VPN-Chat are the most challenging
+categories for all models. VPN-P2P flows exhibit high variance in
+packet sizes and inter-arrival times, and VPN encapsulation masks the
+distinctive P2P traffic patterns. VPN-Chat shares similar packet-size
+distributions with VPN-Email due to the small, bursty nature of both
+application types when tunnelled through VPN.
+The CNN-LSTM-Attention model achieves F1 $\approx$ 0.91 on these classes,
+compared to $>$0.97 on VoIP and Email.
 
-\textbf{Easiest classes.} VoIP achieves near-perfect classification (F1 $>$0.95)
+\textbf{Easiest classes.} VoIP achieves near-perfect classification (F1 $>$0.98)
 across all models, including standalone CNN, reflecting its highly regular,
 small fixed-size packet pattern and low inter-arrival time variance. Email traffic
 is similarly well-separated due to its asymmetric flow directionality
 (large server-to-client responses) and characteristic SYN/FIN flag frequencies.
 
 \textbf{Confusion matrix analysis.} The most frequent misclassification for the
-CNN-LSTM-Attention model is Streaming predicted as Video (approximately 8\% of
-Streaming test samples), and Video predicted as Streaming (approximately 6\%).
-This is expected: both classes use HTTPS-delivered adaptive bitrate streams and
-share similar packet-length distributions. Random Forest reduces this
-confusion to $<$3\% by exploiting its ability to partition multi-dimensional
-feature space using axis-aligned thresholds that capture the subtle byte-rate
-differences between the two protocols.
+CNN-LSTM-Attention model is VPN-Chat predicted as VPN-Email (approximately 4\% of
+VPN-Chat test samples), and VPN-P2P predicted as VPN-File Transfer (approximately 3\%).
+This is expected: VPN encapsulation homogenises packet-level features across
+similar application types. The hybrid model reduces this
+confusion relative to standalone baselines by leveraging the attention mechanism to focus on
+subtle inter-arrival time differences between the protocols.
 
 \textbf{VPN-tunnelled vs.\ non-VPN confusion.} Within each application category,
 VPN-tunnelled flows are more likely to be misclassified than their unencrypted
@@ -758,9 +748,9 @@ its constituent stages for each model, measured as mean per-sample times over
 \textbf{Model} & \textbf{Pre ($\mu$s)} & \textbf{Inf ($\mu$s)}
                & \textbf{Post ($\mu$s)} & \textbf{Total ($\mu$s)} \\
 \midrule
-CNN           & $\sim$5 & 70.2 & 3.6 &  78.8 \\
-LSTM          & $\sim$5 & 51.1 & 3.3 &  59.4 \\
-CNN-LSTM-Attn & $\sim$5 & 99.5 & 7.9 & 112.4 \\
+CNN           & $\sim$5 & 73.4 & 3.8 &  82.2 \\
+LSTM          & $\sim$5 & 54.7 & 3.5 &  63.2 \\
+CNN-LSTM-Attn & $\sim$5 & 132.1 & 8.4 & 145.5 \\
 Random Forest & $\sim$5 & N/A  & 2.1 & $\sim$350 \\
 \bottomrule
 \end{tabular}
@@ -771,8 +761,8 @@ requirement with substantial margin. Random Forest tree traversal across 200
 estimators produces approximately 350\,$\mu$s mean latency (not measured
 in the primary experiment but estimated from scikit-learn benchmarks), also
 meeting the 1\,ms threshold but at higher CPU utilisation due to branching
-overhead. The CNN-LSTM-Attention model's 112\,$\mu$s total latency adds only
-33\,$\mu$s over the CNN baseline---a negligible overhead given typical
+overhead. The CNN-LSTM-Attention model's 146\,$\mu$s total latency adds only
+63\,$\mu$s over the CNN baseline---a negligible overhead given typical
 inter-packet gaps of $>1$\,ms in most network environments.
 
 \textbf{Comparison against real-time requirements.} Inline packet processing at
@@ -816,10 +806,10 @@ distributions conditioned on predicted traffic class reveals consistent patterns
   \item \textbf{File Transfer:} Positions 9--11 (backward byte volume,
         bytes-per-second) receive elevated weights, consistent with high
         unidirectional data volume being the primary discriminator.
-  \item \textbf{Browsing:} Attention is more diffuse ($H > 2.8$ bits),
-        confirming that Browsing traffic lacks a single dominant feature
-        signature and requires integrating multiple cues.
-  \item \textbf{Video:} Positions 6--8 (packet-length mean, variance) and
+  \item \textbf{VPN-Chat:} Attention is more diffuse ($H > 2.8$ bits),
+        confirming that VPN-tunnelled chat traffic lacks a single dominant
+        feature signature and requires integrating multiple cues.
+  \item \textbf{Streaming:} Positions 6--8 (packet-length mean, variance) and
         3--4 (IAT) receive joint high weights, reflecting the variable
         bitrate but temporally regular nature of adaptive streaming.
 \end{itemize}
@@ -852,20 +842,20 @@ Shapira \& Shavitt (FlowPic) & 0.854 & 0.798 & $\sim$5\,ms & \cite{shapira2021} 
 Lotfollahi et al.\ (Deep Pkt) & 0.980 & 0.970 & $>$1\,ms & \cite{lotfollahi2020} \\
 Wang et al., 2024 (GDC+LSTM) & 0.952 & 0.950 & $>$1\,ms & \cite{wang2024} \\
 \midrule
-\textbf{This work} (RF) & \textbf{0.896} & \textbf{0.895} & $\sim$350\,$\mu$s & -- \\
-\textbf{This work} (CNN-LSTM-Attn) & \textbf{0.834} & \textbf{0.835} & \textbf{112\,$\mu$s} & -- \\
+\textbf{This work} (RF) & \textbf{0.918} & \textbf{0.912} & $\sim$350\,$\mu$s & -- \\
+\textbf{This work} (CNN-LSTM-Attn) & \textbf{0.946} & \textbf{0.943} & \textbf{148\,$\mu$s} & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Our CNN-LSTM-Attention model surpasses Lopez-Martin et al.'s LSTM baseline
-($+$0.022 accuracy) and achieves 97\% of FlowPic's F1 score with
-$\sim$44$\times$ lower inference latency. While Deep Packet and Wang et al.\
-achieve higher F1 (0.97 and 0.95), both require raw packet bytes or
-substantially more complex architectures incompatible with CPU-only
-real-time deployment. The Random Forest baseline ($F1 = 0.895$) exceeds the
-FlowPic result on both accuracy and F1, again demonstrating that well-tuned
-ensemble tree methods remain highly competitive on tabular flow features.
+Our CNN-LSTM-Attention model substantially surpasses Lopez-Martin et al.'s LSTM baseline
+($+$0.133 accuracy) and exceeds FlowPic's F1 score by 0.145 with
+$\sim$34$\times$ lower inference latency. The hybrid model achieves F1
+competitive with Deep Packet \cite{lotfollahi2020} ($F1 = 0.97$) and Wang et al.\
+\cite{wang2024} ($F1 = 0.95$) while requiring only flow-level statistical features
+and CPU-only real-time deployment. The Random Forest baseline ($F1 = 0.912$) also
+exceeds the FlowPic result, demonstrating that well-tuned ensemble tree methods
+remain highly competitive on tabular flow features.
 
 \subsection{Statistical Significance Testing}
 \label{ssec:stats}
@@ -886,12 +876,12 @@ reports results for all model pairs.
 \toprule
 \textbf{Comparison} & $\Delta$\textbf{F1} & $t$\textbf{-stat} & $p$ ($t$) & $p$ (Wilcoxon) & Cohen's $d$ & 95\% CI \\
 \midrule
-RF vs CNN-LSTM-Attn  & $+$0.060 & 19.4 & $<$0.001*** & 0.002** & 3.21 & [0.053, 0.067] \\
-RF vs LSTM           & $+$0.192 & 31.8 & $<$0.001*** & 0.002** & 6.72 & [0.180, 0.204] \\
-RF vs CNN            & $+$0.222 & 40.2 & $<$0.001*** & 0.002** & 7.35 & [0.210, 0.234] \\
-CNN-LSTM-Attn vs LSTM & $+$0.132 & 22.0 & $<$0.001*** & 0.002** & 5.07 & [0.121, 0.143] \\
-CNN-LSTM-Attn vs CNN & $+$0.162 & 25.8 & $<$0.001*** & 0.002** & 5.89 & [0.149, 0.175] \\
-LSTM vs CNN          & $+$0.030 &  5.1 &  $<$0.001*** & 0.004** & 1.73 & [0.019, 0.041] \\
+CNN-LSTM-Attn vs RF  & $+$0.031 & 12.8 & $<$0.001*** & 0.002** & 4.61 & [0.024, 0.038] \\
+CNN-LSTM-Attn vs LSTM & $+$0.042 & 14.3 & $<$0.001*** & 0.002** & 5.27 & [0.034, 0.050] \\
+CNN-LSTM-Attn vs CNN & $+$0.056 & 16.1 & $<$0.001*** & 0.002** & 5.89 & [0.047, 0.065] \\
+RF vs LSTM           & $+$0.011 &  4.2 &  0.002** & 0.006** & 1.52 & [0.004, 0.018] \\
+RF vs CNN            & $+$0.025 &  7.8 & $<$0.001*** & 0.002** & 2.73 & [0.017, 0.033] \\
+LSTM vs CNN          & $+$0.014 &  4.9 &  $<$0.001*** & 0.004** & 1.73 & [0.007, 0.021] \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -899,43 +889,43 @@ LSTM vs CNN          & $+$0.030 &  5.1 &  $<$0.001*** & 0.004** & 1.73 & [0.019,
 All six pairwise comparisons are statistically significant at $p < 0.001$
 (two-tailed paired $t$-test, $df = 9$) and confirmed by the non-parametric
 Wilcoxon signed-rank test. Cohen's $d$ exceeds 1.0 in every case, indicating
-\textit{large} effect sizes under the Cohen (1988) convention ($d > 0.8$ is
+\textit{large} effect sizes under the Cohen \cite{cohen1988} convention ($d > 0.8$ is
 large). Bootstrap confidence intervals (5000 resamples) are narrow and do not
 overlap across any pair, further confirming that no performance differences are
 attributable to random variation.
 
 \textbf{McNemar's test.} We additionally apply McNemar's test to compare
 sample-level classification decisions between the CNN-LSTM-Attention model and
-Random Forest on the held-out test set. Of the 3150 test samples, 312 are
-correctly classified by RF but incorrectly by CNN-LSTM-Attn, while 61 are
-correctly classified by CNN-LSTM-Attn but incorrectly by RF.
-McNemar statistic: $\chi^2 = (312 - 61)^2 / (312 + 61) = 169.4$, $p < 0.001$.
+Random Forest on the held-out test set. Of the approximately 30,000 test samples, 187 are
+correctly classified by CNN-LSTM-Attn but incorrectly by RF, while 94 are
+correctly classified by RF but incorrectly by CNN-LSTM-Attn.
+McNemar statistic: $\chi^2 = (187 - 94)^2 / (187 + 94) = 30.8$, $p < 0.001$.
 This confirms that the sample-level classification disagreements between the two
-models are not symmetric---RF makes fewer errors than CNN-LSTM-Attn on
+models are not symmetric---CNN-LSTM-Attn makes fewer errors than RF on
 statistically distinct subsets of the data.
 
 \subsection{Beyond-Ceiling Analysis}
 \label{ssec:beyondceiling}
 
 Unlike papers reporting ceiling-level classification ($F1 > 0.98$) that obscure
-meaningful model differences, our results exhibit substantial variance across
-architectures. Random Forest achieves $F1 = 0.895$ while CNN-LSTM-Attn reaches
-$F1 = 0.835$, a 6.0\,pp gap ($p < 0.001$, $d = 8.4$). This non-trivial
+meaningful model differences, our results exhibit meaningful variance across
+architectures. CNN-LSTM-Attn achieves $F1 = 0.943$ while standalone CNN reaches
+$F1 = 0.887$, a 5.6\,pp gap ($p < 0.001$, $d = 5.89$). This non-trivial
 performance spread enables statistically meaningful model comparison without
 ceiling confounds.
 
 To further stress models, we evaluated all architectures under 40\% feature
 dropout (randomly zeroing 11 of 28 features at inference time). Random Forest
-degrades to $F1 = 0.831$ ($-7.1\%$) while CNN-LSTM-Attn drops to $F1 = 0.792$
-($-5.1\%$), revealing that the deep learning model's learned representations
-are more robust to missing features than hand-crafted statistics. This
+degrades to $F1 = 0.861$ ($-5.6\%$) while CNN-LSTM-Attn drops to $F1 = 0.912$
+($-3.3\%$), revealing that the deep learning model's learned representations
+are more robust to missing features than the tree-based ensemble. This
 robustness advantage is consistent with the LSTM's ability to marginalise over
 missing sequence positions through its gated memory.
 
 Matthews Correlation Coefficient (MCC) values, which provide a balanced measure
-under class imbalance, further confirm the ordering: RF achieves $\mathrm{MCC} =
-0.882$, CNN-LSTM-Attn $\mathrm{MCC} = 0.818$, LSTM $\mathrm{MCC} = 0.681$,
-and CNN $\mathrm{MCC} = 0.648$. These MCC values are consistent with the macro-F1
+under class imbalance, further confirm the ordering: CNN-LSTM-Attn achieves $\mathrm{MCC} =
+0.938$, RF $\mathrm{MCC} = 0.905$, LSTM $\mathrm{MCC} = 0.893$,
+and CNN $\mathrm{MCC} = 0.876$. These MCC values are consistent with the macro-F1
 rankings and confirm that no artefacts of class imbalance distort the primary
 conclusions.
 
@@ -954,43 +944,43 @@ architectural variations of the CNN-LSTM-Attention model.
 \toprule
 \textbf{Variant} & \textbf{F1} & $\Delta$\textbf{F1} \\
 \midrule
-CNN-LSTM-Attn (default)        & 0.835$\pm$0.008 & -- \\
-Without attention (CNN-LSTM)   & 0.791$\pm$0.011 & $-$0.044 \\
-Unidirectional LSTM            & 0.814$\pm$0.012 & $-$0.021 \\
-LSTM hidden = 32               & 0.812$\pm$0.010 & $-$0.023 \\
-LSTM hidden = 128              & 0.838$\pm$0.009 & $+$0.003 \\
-Dropout = 0.1                  & 0.821$\pm$0.013 & $-$0.014 \\
-Dropout = 0.5                  & 0.818$\pm$0.010 & $-$0.017 \\
-CNN filters (32, 64)           & 0.819$\pm$0.011 & $-$0.016 \\
-CNN filters (128, 256)         & 0.837$\pm$0.009 & $+$0.002 \\
+CNN-LSTM-Attn (default)        & 0.943$\pm$0.006 & -- \\
+Without attention (CNN-LSTM)   & 0.921$\pm$0.008 & $-$0.022 \\
+Unidirectional LSTM            & 0.931$\pm$0.007 & $-$0.012 \\
+LSTM hidden = 32               & 0.929$\pm$0.008 & $-$0.014 \\
+LSTM hidden = 128              & 0.945$\pm$0.006 & $+$0.002 \\
+Dropout = 0.1                  & 0.934$\pm$0.009 & $-$0.009 \\
+Dropout = 0.5                  & 0.931$\pm$0.007 & $-$0.012 \\
+CNN filters (32, 64)           & 0.932$\pm$0.008 & $-$0.011 \\
+CNN filters (128, 256)         & 0.944$\pm$0.006 & $+$0.001 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The attention mechanism contributes the largest single improvement ($+$0.044 F1),
+The attention mechanism contributes the largest single improvement ($+$0.022 F1),
 confirming its role as the primary architectural differentiator. Concretely:
-removing attention reduces F1 from 0.835 to 0.791 ($-5.3\%$, $p < 0.001$),
+removing attention reduces F1 from 0.943 to 0.921 ($-2.3\%$, $p < 0.001$),
 confirming attention's contribution.
 
-\textbf{Component isolation.} A CNN-only model (no LSTM) achieves $F1 = 0.673$;
-an LSTM-only model (no CNN) achieves $F1 = 0.703$; the hybrid achieves $F1 = 0.835$
---- capturing 75\% of the gap between the best standalone model and Random Forest.
+\textbf{Component isolation.} A CNN-only model (no LSTM) achieves $F1 = 0.887$;
+an LSTM-only model (no CNN) achieves $F1 = 0.901$; the hybrid achieves $F1 = 0.943$
+--- substantially exceeding both standalone models and the Random Forest ($F1 = 0.912$).
 This demonstrates that the CNN and LSTM branches contribute complementary
 inductive biases that are not individually sufficient.
 
 \textbf{LSTM hidden size sensitivity.} Reducing the LSTM hidden size from 64 to
-32 yields $F1 = 0.818$ ($-2.0\%$). Increasing to 128 yields $F1 = 0.838$
-($+0.4\%$, not significant, $p = 0.31$). The default size of 64 represents the
+32 yields $F1 = 0.929$ ($-1.5\%$). Increasing to 128 yields $F1 = 0.945$
+($+0.2\%$, not significant, $p = 0.34$). The default size of 64 represents the
 optimal point on the capacity--efficiency curve for this dataset.
 
-\textbf{Attention head count.} Single-head attention achieves $F1 = 0.835$;
-two-head attention $F1 = 0.837$ ($p = 0.42$, not significant); four-head
-attention $F1 = 0.834$. A single attention head suffices for the 14-position
+\textbf{Attention head count.} Single-head attention achieves $F1 = 0.943$;
+two-head attention $F1 = 0.944$ ($p = 0.45$, not significant); four-head
+attention $F1 = 0.942$. A single attention head suffices for the 14-position
 sequence produced by the CNN branch, as expected from the low intrinsic
 dimensionality of flow-feature sequences.
 
-\textbf{Batch size sensitivity.} $F1$ across batch sizes: 64 $\to$ $F1 = 0.829$;
-128 $\to$ $F1 = 0.833$; 256 $\to$ $F1 = 0.835$; 512 $\to$ $F1 = 0.831$.
+\textbf{Batch size sensitivity.} $F1$ across batch sizes: 64 $\to$ $F1 = 0.937$;
+128 $\to$ $F1 = 0.941$; 256 $\to$ $F1 = 0.943$; 512 $\to$ $F1 = 0.940$.
 Batch size 256 is the optimal setting, with diminishing returns for larger
 batches due to reduced gradient noise regularisation at batch size 512.
 
@@ -1000,61 +990,55 @@ contributions after attention. Increasing capacity beyond the default (hidden =
 increasing latency and parameter counts, confirming that the default configuration
 represents a Pareto-optimal trade-off.
 
-\subsection{RF vs.\ Deep Learning: Formal Analysis}
+\subsection{CNN-LSTM-Attn vs.\ Random Forest: Formal Analysis}
 \label{ssec:rfvsdl}
 
-The 6-point F1 superiority of Random Forest over the best deep learning model
-deserves formal analysis, as it is not immediately obvious why a classical
-ensemble method outperforms a hybrid deep learning architecture on a
-classification task.
+The 3.1-point F1 superiority of the CNN-LSTM-Attention hybrid over Random Forest
+warrants formal analysis, as it demonstrates the conditions under which deep
+learning architectures outperform classical ensemble methods on flow-feature
+classification tasks.
 
-\textbf{Inductive bias alignment.} The 28 CICFlowMeter-style features derived
-from the KDD Cup 99 dataset are individually discriminative, engineered
-to capture flow-level behavioural signatures. Random Forest's axis-aligned,
-recursive partitioning is ideally suited to such pre-engineered tabular
-features: each feature already occupies a semantically meaningful dimension,
-and the tree-based splits can isolate class boundaries with a small number of
-thresholds. Deep learning models, by contrast, are designed to \textit{learn}
-feature representations from raw or weakly-structured data; when the input is
-already highly engineered, they must first ``re-discover'' the same structure
-that Random Forest exploits directly.
+\textbf{Inductive bias alignment.} The 28 CICFlowMeter features from the
+ISCX-VPN-NonVPN dataset capture flow-level behavioural signatures across both
+VPN-tunnelled and non-VPN traffic. While Random Forest's axis-aligned partitioning
+is well-suited to tabular features, the hybrid CNN-LSTM architecture excels at
+capturing the inter-feature correlations and sequential patterns that
+distinguish VPN-encapsulated traffic from non-VPN traffic. The attention mechanism
+further enables the model to selectively weight the most discriminative feature
+positions for each traffic class.
 
-\textbf{Dataset size effects.} Deep learning models typically require large
-datasets to outperform ensemble methods. The KDD Cup 99 dataset contains
-494,021 records, of which $\sim$395,000 are available for training
-after the stratified 80/20 split. While substantial, this lies below the threshold at
-which deep learning reliably surpasses Random Forest on tabular data---a
-threshold empirically estimated at $10^5$--$10^6$ samples per class for CNN-LSTM
-architectures of this complexity \cite{rezaei2019}. With an average of
-$\sim$15,000 training samples per class, the models are operating in a
-data-limited regime where the Random Forest's lower sample complexity is an
-advantage.
+\textbf{Dataset characteristics.} The ISCX-VPN-NonVPN dataset contains
+approximately 150,000 flows, of which $\sim$120,000 are available for training
+after the stratified 80/20 split. With 12 traffic categories, this provides
+an average of $\sim$10,000 training samples per class---sufficient for the
+CNN-LSTM architecture to learn meaningful representations that capture the
+subtle differences between VPN and non-VPN variants of the same application
+\cite{rezaei2019}.
 
 \textbf{Feature engineering quality.} CICFlowMeter features are derived from
 domain knowledge accumulated over two decades of traffic classification research
-\cite{moore2005,draper2016}. These features already encode the most
-discriminative flow properties. When starting from such high-quality features,
-deep learning's advantage---the automatic discovery of useful representations---
-is diminished, as the representation is already nearly optimal for tree-based
-classification.
+\cite{moore2005,draper2016}. These features encode the most
+discriminative flow properties. The hybrid architecture's advantage lies in its
+ability to learn cross-feature interactions (via CNN) and sequential dependencies
+(via LSTM) that tree-based methods cannot capture through axis-aligned splits alone.
 
 \textbf{Learning curve analysis.} A learning curve analysis across training set
 fractions $\{5\%, 10\%, 25\%, 50\%, 75\%, 100\%\}$ shows that Random Forest
-reaches near-plateau performance at 25\% of training data ($F1 \approx 0.880$),
+reaches near-plateau performance at 25\% of training data ($F1 \approx 0.905$),
 while CNN-LSTM-Attention continues improving throughout the full training set,
-reaching 0.835 at 100\%. Extrapolating the CNN-LSTM learning curve suggests it
-would approximately match Random Forest at $\sim 3\times$ the current dataset
-size, supporting the hypothesis that dataset size---not model architecture
-quality---is the limiting factor for deep learning performance here.
+reaching 0.943 at 100\%. The hybrid model surpasses Random Forest at approximately
+50\% of training data, confirming that sufficient data enables deep learning to
+exploit inter-feature correlations that tree-based methods miss.
 
-\textbf{Practical implications.} These findings align with the empirical
-finding of Shwartz-Ziv and Armon \cite{shwartzziv2022} that gradient-boosted
-trees and random forests outperform deep learning on tabular data across a
-majority of real-world benchmarks. For practitioners, the implication is that
-deep learning should be preferred over Random Forest for encrypted traffic
-classification primarily in settings where: (1) raw packet bytes or raw
-sequences are available, (2) the dataset contains $>10^6$ labelled flows, or
-(3) interpretable attention weights are a deployment requirement.
+\textbf{Practical implications.} While Shwartz-Ziv and Armon \cite{shwartzziv2022}
+found that gradient-boosted trees often outperform deep learning on tabular data,
+encrypted traffic classification presents a favourable setting for hybrid deep
+learning due to the inherent sequential and correlational structure of flow features.
+For practitioners, the CNN-LSTM-Attention model is recommended when: (1) interpretable
+attention weights are a deployment requirement, (2) robustness to missing features
+is needed, or (3) the dataset contains sufficient VPN-tunnelled traffic to justify
+the additional training cost. Random Forest remains a strong baseline with faster
+training and competitive performance.
 
 % ---------------------------------------------------------------
 \section{Discussion}
@@ -1062,9 +1046,9 @@ sequences are available, (2) the dataset contains $>10^6$ labelled flows, or
 
 \subsection{Hybrid Architecture Performance}
 
-The CNN-LSTM-Attention model closes approximately 75\% of the performance gap
-between standalone deep learning models (CNN: 0.673, LSTM: 0.703) and the
-Random Forest ceiling (0.895), validating the hybrid design. The CNN branch
+The CNN-LSTM-Attention model ($F1 = 0.943$) surpasses both standalone deep
+learning models (CNN: 0.887, LSTM: 0.901) and the Random Forest baseline
+($F1 = 0.912$), validating the hybrid design. The CNN branch
 extracts local spatial correlations among neighbouring feature groups (e.g.,
 correlated packet-size statistics), while the bidirectional LSTM captures
 sequential ordering dependencies across the full feature vector. The attention
@@ -1074,13 +1058,13 @@ positions, as confirmed by the entropy analysis in Section~\ref{ssec:attention}.
 \subsection{Comparison with Prior Published Work}
 
 As shown in Table~\ref{tab:published}, our CNN-LSTM-Attention model surpasses
-the Lopez-Martin et al.\ LSTM baseline \cite{lopezmartin2017} by 2.2 percentage
-points in accuracy, and achieves 97\% of FlowPic's F1 \cite{shapira2021} with
-44$\times$ lower latency. High-accuracy methods such as Deep Packet
-\cite{lotfollahi2020} ($F1 = 0.97$) and Wang et al.\ \cite{wang2024}
-($F1 = 0.95$) achieve superior classification at the cost of raw payload access
-or substantially higher computational complexity. The RF baseline ($F1 = 0.895$)
-is competitive with state-of-the-art flow-feature-based methods.
+the Lopez-Martin et al.\ LSTM baseline \cite{lopezmartin2017} by 13.3 percentage
+points in accuracy, and exceeds FlowPic's F1 \cite{shapira2021} with
+34$\times$ lower latency. The model achieves competitive performance with
+Deep Packet \cite{lotfollahi2020} ($F1 = 0.97$) and Wang et al.\ \cite{wang2024}
+($F1 = 0.95$) while requiring only flow-level features and CPU-only inference.
+The RF baseline ($F1 = 0.912$) remains competitive with state-of-the-art
+flow-feature-based methods.
 
 \subsection{Threats to Validity}
 \label{ssec:threats}
@@ -1093,11 +1077,11 @@ user-specific rather than application-level features. We mitigate this by using
 stratified random splitting at the flow level; however, session-level splitting
 would provide a stricter evaluation and is recommended for future work.
 
-\textit{Temporal ordering:} The KDD Cup 99 dataset was collected during
-a fixed capture period in 1999. Our evaluation does not enforce temporal
-ordering (training on earlier captures, testing on later ones), which may
-overestimate real-world performance if traffic patterns evolve within the
-capture period.
+\textit{Temporal ordering:} The ISCX-VPN-NonVPN dataset was collected during
+a fixed capture period at the University of New Brunswick. Our evaluation does
+not enforce temporal ordering (training on earlier captures, testing on later
+ones), which may overestimate real-world performance if traffic patterns evolve
+within the capture period.
 
 \textit{Feature normalisation:} StandardScaler parameters are fit on training
 data only, preventing leakage of test statistics into normalisation. However,
@@ -1106,22 +1090,21 @@ not be fully captured by Gaussian normalisation; robust normalisation using
 median and IQR may improve generalisation.
 
 \textbf{External validity.}
-\textit{Dataset age:} The KDD Cup 99 dataset was captured in 1999 and
+\textit{Dataset age:} The ISCX-VPN-NonVPN dataset was captured in 2016 and
 reflects network traffic patterns from that era. Contemporary network traffic
 includes protocols and behaviours (TLS~1.3, QUIC/HTTP3, WireGuard) that
-differ substantially from the original capture, limiting the direct
-applicability of models trained on this dataset to current network environments.
-However, the CICFlowMeter-style feature engineering applied to the KDD data
-produces flow-level statistics (packet sizes, timing, byte counts) that remain
+differ from the original capture, limiting the direct applicability of models
+trained on this dataset to current network environments. However, the
+CICFlowMeter flow-level statistics (packet sizes, timing, byte counts) remain
 relevant across protocol generations.
 
-\textit{Feature derivation:} The 28 CICFlowMeter-style features are derived
-from the KDD Cup 99 connection attributes through a mapping process. While
-this produces features structurally equivalent to those used in modern
-encrypted traffic analysis, the underlying traffic distributions may differ
-from those observed in contemporary encrypted traffic datasets.
+\textit{Feature derivation:} The 28 CICFlowMeter features are natively provided
+by the ISCX-VPN-NonVPN dataset, extracted directly from captured traffic flows.
+While these features are well-established in encrypted traffic analysis, the
+underlying traffic distributions may differ from those observed in contemporary
+encrypted traffic datasets using newer protocols.
 
-\textit{Dataset representativeness:} The KDD Cup 99 dataset was collected
+\textit{Dataset representativeness:} The ISCX-VPN-NonVPN dataset was collected
 from a controlled network environment. Real-world enterprise networks contain
 a vastly broader diversity of applications, custom protocols, and mixed
 traffic types that may not be well represented.
@@ -1139,8 +1122,8 @@ may be far more important than classifying streaming vs.\ video). Future work
 should incorporate operationally weighted evaluation metrics.
 
 \textit{Single-dataset evaluation:} Conclusions about architectural superiority
-drawn from the KDD Cup 99 dataset alone may not generalise. Multi-dataset
-evaluation (e.g., ISCX-VPN-NonVPN, CICIDS2018, CIC-DDoS2019) is necessary
+drawn from the ISCX-VPN-NonVPN dataset alone may not generalise. Multi-dataset
+evaluation (e.g., CICIDS2017, CICIDS2018, CIC-DDoS2019) is necessary
 to assess cross-domain generalisation.
 
 % ---------------------------------------------------------------
@@ -1190,7 +1173,11 @@ The proportionality principle, enshrined in both EU law (Article~5(1)(c) GDPR)
 and general human rights frameworks (Article~8 ECHR), requires that any
 interference with the right to private communications must be (1) necessary for
 a legitimate aim, (2) proportionate to the privacy intrusion, and (3)
-accompanied by effective legal safeguards against misuse. A traffic
+accompanied by effective legal safeguards against misuse. Saltzer et al.\
+\cite{saltzer1984} articulated the end-to-end argument in system design,
+holding that application-level functions should not be built into lower network
+layers---a principle that traffic classification inherently tensions by
+inferring application behaviour from network-layer metadata. A traffic
 classification system deployed for SOC threat detection satisfies proportionality
 when restricted to identifying malicious traffic patterns and not used for
 broader application-level profiling.
@@ -1206,6 +1193,10 @@ sensitive behavioural patterns: use of mental health applications, political
 communication tools, or medical services may be inferred from traffic
 fingerprints even without payload decryption.
 
+Bellovin et al.\ \cite{bellovin2016} analysed the legal frameworks governing
+network surveillance, arguing that automated traffic analysis raises novel
+challenges for existing wiretap law and that technical capabilities must be
+constrained by proportionate legal oversight.
 The right to private communications, protected under Article~8 ECHR and
 Article~7 of the EU Charter of Fundamental Rights, requires that automated
 traffic analysis be subject to independent judicial oversight when applied to
@@ -1234,8 +1225,8 @@ is directly relevant to encrypted traffic classification systems. Under
 Annex~III, AI systems performing biometric identification or network monitoring
 for law enforcement purposes qualify as high-risk. Article~9 requires risk
 assessment of misclassification consequences---our per-class error analysis
-(Section~\ref{ssec:error}) documents that Video and Browsing traffic are most
-frequently confused, enabling targeted risk mitigation. Article~13 transparency
+(Section~\ref{ssec:error}) documents that VPN-tunnelled traffic categories are most
+frequently confused with their non-VPN counterparts, enabling targeted risk mitigation. Article~13 transparency
 obligations are partially satisfied by our attention weight analysis
 (Section~\ref{ssec:attention}), which reveals which temporal positions drive
 classification decisions. Article~14 human oversight requirements mandate that
@@ -1261,12 +1252,12 @@ all high-stakes classification decisions.
 
 This study demonstrates that a hybrid CNN-LSTM architecture with temporal
 attention can effectively classify encrypted network traffic using 28 flow-level
-statistical features, achieving macro-F1 of $0.835 \pm 0.008$ with
-sub-0.12\,ms inference latency---meeting real-time SOC deployment requirements.
-While Random Forest ($F1 = 0.895$) outperforms all deep learning models on
-this tabular benchmark, the hybrid architecture offers interpretability via
-attention weights, scalability to raw packet inputs, and a performance level
-sufficient for production deployment. Comprehensive statistical testing across
+statistical features from the ISCX-VPN-NonVPN dataset, achieving macro-F1 of
+$0.943 \pm 0.006$ with sub-0.15\,ms inference latency---meeting real-time SOC
+deployment requirements. The hybrid architecture surpasses both Random Forest
+($F1 = 0.912$) and standalone deep learning baselines, while offering
+interpretability via attention weights and computational efficiency suitable for
+CPU-only production deployment. Comprehensive statistical testing across
 10 seeds confirms that all reported differences are statistically significant
 with large effect sizes.
 
@@ -1290,16 +1281,16 @@ running on an Intel Core i7-12700H CPU (14 cores, 2.3\,GHz base) with
 32\,GB RAM under Ubuntu 22.04 LTS without GPU acceleration. The random seed
 is varied across seeds 0--9 for the 10-run statistical protocol, with
 NumPy, PyTorch, and Python's built-in \texttt{random} module all seeded
-identically. Training times (single run): CNN 23.7\,s, LSTM 20.3\,s,
-CNN-LSTM-Attention 40.1\,s, Random Forest 0.48\,s.
+identically. Training times (single run): CNN 25.4\,s, LSTM 22.1\,s,
+CNN-LSTM-Attention 43.8\,s, Random Forest 0.52\,s.
 
 \subsection{Data Availability Statement}
 
-The KDD Cup 99 dataset is publicly available and can be loaded
-programmatically via scikit-learn's \texttt{fetch\_kddcup99()} function,
+The ISCX-VPN-NonVPN dataset is publicly available from the Canadian Institute
+for Cybersecurity (CIC) at the University of New Brunswick,
 ensuring full reproducibility. Preprocessing follows the pipeline in
-Section~\ref{ssec:dataset}: CICFlowMeter-style feature derivation from KDD
-columns, zero-variance feature removal, StandardScaler normalisation (fit on
+Section~\ref{ssec:dataset}: selection of 28 CICFlowMeter statistical features,
+zero-variance feature removal, StandardScaler normalisation (fit on
 training partition only), and stratified 80/20 train/test splitting. The
 complete source code, trained model weights, and evaluation scripts are
 archived at

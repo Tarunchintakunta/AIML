@@ -1,42 +1,34 @@
 {
   "graphsage_2layer": {
-    "f1": 1.0,
-    "accuracy": 1.0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "auc_roc": 1.0,
-    "training_time": 0.47995805740356445
+    "f1": 0.9920318725099602,
+    "accuracy": 0.9994666666666666,
+    "precision": 0.9920318725099602,
+    "recall": 0.9920318725099602,
+    "auc_roc": 0.9999554822508834,
+    "training_time": 4.118566989898682
   },
   "graphsage_3layer": {
-    "f1": 0.9966777408637874,
-    "accuracy": 0.9986666666666667,
-    "precision": 0.9933774834437086,
-    "recall": 1.0,
-    "auc_roc": 1.0,
-    "training_time": 0.4908790588378906
+    "f1": 0.9940119760479041,
+    "accuracy": 0.9996,
+    "precision": 0.996,
+    "recall": 0.9920318725099602,
+    "auc_roc": 0.9999846111484536,
+    "training_time": 7.057232141494751
   },
   "random_forest": {
-    "f1": 1.0,
-    "accuracy": 1.0,
+    "f1": 0.998003992015968,
+    "accuracy": 0.9998666666666667,
     "precision": 1.0,
-    "recall": 1.0,
-    "auc_roc": 1.0,
-    "training_time": 0.25432801246643066
-  },
-  "xgboost": {
-    "f1": 1.0,
-    "accuracy": 1.0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "auc_roc": 1.0,
-    "training_time": 0.06396913528442383
+    "recall": 0.9960159362549801,
+    "auc_roc": 0.9999989007963181,
+    "training_time": 0.46324586868286133
   },
   "mlp": {
-    "f1": 1.0,
-    "accuracy": 1.0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "auc_roc": 1.0,
-    "training_time": 0.08684182167053223
+    "f1": 0.9900596421471173,
+    "accuracy": 0.9993333333333333,
+    "precision": 0.9880952380952381,
+    "recall": 0.9920318725099602,
+    "auc_roc": 0.9986298426105209,
+    "training_time": 0.711467981338501
   }
 }
